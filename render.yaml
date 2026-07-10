@@ -1,0 +1,118 @@
+services:
+
+  # ── Frontend React (Static Site) ─────────────────────
+  - type: web
+    name: iq-crm-frontend
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+  # ── Django API (Web Service) ──────────────────────────
+  - type: web
+    name: iq-crm-backend
+    env: python
+    region: oregon
+    plan: starter
+    buildCommand: cd backend && pip install -r requirements.txt && python manage.py collectstatic --noinput
+    startCommand: cd backend && gunicorn --workers 2 --bind 0.0.0.0:$PORT config.wsgi:application
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: ALLOWED_HOSTS
+        value: .onrender.com
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://iq-crm-frontend.onrender.com
+      - key: DATABASE_URL
+        fromDatabase:
+          name: iq-crm-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: iq-crm-redis
+          type: redis
+          property: connectionString
+      - key: DEFAULT_FROM_EMAIL
+        value: noreply@iqcrm.com.py
+
+  # ── Celery Worker (Background Worker) ────────────────
+  - type: worker
+    name: iq-crm-celery
+    env: python
+    region: oregon
+    plan: starter
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && celery -A config worker --loglevel=info
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: iq-crm-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: iq-crm-redis
+          type: redis
+          property: connectionString
+
+  # ── Cron: tareas vencidas (cada hora) ────────────────
+  - type: cron
+    name: iq-crm-cron-overdue
+    env: python
+    region: oregon
+    plan: starter
+    schedule: "0 * * * *"
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && python manage.py check_overdue_tasks
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: iq-crm-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: iq-crm-redis
+          type: redis
+          property: connectionString
+
+  # ── Cron: recordatorios diarios (7am UTC-4) ──────────
+  - type: cron
+    name: iq-crm-cron-followup
+    env: python
+    region: oregon
+    plan: starter
+    schedule: "0 11 * * *"
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && python manage.py check_followup_reminders
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: iq-crm-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: iq-crm-redis
+          type: redis
+          property: connectionString
+
+databases:
+  - name: iq-crm-db
+    databaseName: wolf_crm
+    user: wolf_user
+    plan: starter
+    region: oregon
+
+redis:
+  - name: iq-crm-redis
+    plan: free
+    region: oregon
