@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply box-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-[#f5f5f7] text-[#1d1d1f] font-sans antialiased;
+  }
+
+  .dark body {
+    @apply bg-[#000000] text-[#f5f5f7];
+  }
+
+  ::-webkit-scrollbar {
+    @apply w-1.5 h-1.5;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-gray-700 rounded-full;
+  }
+}
+
+@layer components {
+  /* ── Buttons ── */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed select-none;
+  }
+
+  .btn-primary {
+    @apply btn bg-wolf-600 text-white hover:bg-wolf-700 focus:ring-wolf-500 shadow-sm hover:shadow active:scale-[0.98];
+  }
+
+  .btn-secondary {
+    @apply btn bg-white dark:bg-surface-dark-secondary text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-surface-dark-tertiary focus:ring-gray-300 shadow-sm active:scale-[0.98];
+  }
+
+  .btn-danger {
+    @apply btn bg-red-500 text-white hover:bg-red-600 focus:ring-red-400 shadow-sm active:scale-[0.98];
+  }
+
+  .btn-ghost {
+    @apply btn text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-surface-dark-secondary focus:ring-gray-200;
+  }
+
+  /* ── Inputs ── */
+  .input {
+    @apply w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-wolf-500/40 focus:border-wolf-500 placeholder:text-gray-400 dark:placeholder:text-gray-600 bg-white dark:bg-surface-dark-secondary text-gray-900 dark:text-gray-100 transition-colors;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5;
+  }
+
+  /* ── Cards ── */
+  .card {
+    @apply bg-white dark:bg-surface-dark-secondary rounded-2xl border border-gray-100 dark:border-gray-800 shadow-apple;
+  }
+
+  .card-flat {
+    @apply bg-white dark:bg-surface-dark-secondary rounded-2xl border border-gray-100 dark:border-gray-800;
+  }
+
+  /* ── Badges ── */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  /* ── Section headers ── */
+  .section-title {
+    @apply text-xs font-semibold text-gray-400 dark:text-gray-600 uppercase tracking-widest;
+  }
+
+  /* ── Dividers ── */
+  .divider {
+    @apply border-t border-gray-100 dark:border-gray-800;
+  }
+}
