@@ -82,11 +82,12 @@ services:
           type: redis
           property: connectionString
 
-  # ── Redis (dentro de services, no sección separada) ──
+  # ── Redis ────────────────────────────────────────────
   - type: redis
     name: iq-crm-redis
     plan: free
     region: oregon
+    ipAllowList: []
 
 databases:
   - name: iq-crm-db
