@@ -82,14 +82,15 @@ services:
           type: redis
           property: connectionString
 
+  # ── Redis (dentro de services, no sección separada) ──
+  - type: redis
+    name: iq-crm-redis
+    plan: free
+    region: oregon
+
 databases:
   - name: iq-crm-db
     databaseName: wolf_crm
     user: wolf_user
     plan: starter
-    region: oregon
-
-redis:
-  - name: iq-crm-redis
-    plan: free
     region: oregon
