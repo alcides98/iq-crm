@@ -1,4 +1,56 @@
 from django.db import models
+from datetime import date
+
+
+class Factura(models.Model):
+    STATUS_CHOICES = [
+        ('facturado', 'Facturado'),
+        ('pendiente', 'Pendiente'),
+        ('cobrado', 'Cobrado'),
+    ]
+
+    client = models.ForeignKey(
+        'clients.Client', on_delete=models.CASCADE, related_name='facturas'
+    )
+    numero_factura = models.CharField(max_length=50)
+    fecha = models.DateField()
+    detalle_servicio = models.TextField()
+    monto = models.DecimalField(max_digits=15, decimal_places=0)
+    fecha_vencimiento = models.DateField()
+    fecha_cobro = models.DateField(null=True, blank=True)
+    estado = models.CharField(max_length=20, choices=STATUS_CHOICES, default='facturado')
+    notas = models.TextField(blank=True)
+    created_by = models.ForeignKey(
+        'authentication.User', on_delete=models.SET_NULL,
+        null=True, related_name='facturas_created'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-fecha', '-created_at']
+        verbose_name = 'Factura'
+        verbose_name_plural = 'Facturas'
+
+    def __str__(self):
+        return f'Factura {self.numero_factura} — {self.client.company_name}'
+
+    @property
+    def dias_atraso(self):
+        if self.estado == 'cobrado':
+            return 0
+        today = date.today()
+        if self.fecha_vencimiento < today:
+            return (today - self.fecha_vencimiento).days
+        return 0
+
+    @property
+    def dias_para_vencer(self):
+        if self.estado == 'cobrado':
+            return None
+        today = date.today()
+        delta = (self.fecha_vencimiento - today).days
+        return delta if delta >= 0 else 0
 
 
 class Payment(models.Model):

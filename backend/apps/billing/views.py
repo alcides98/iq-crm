@@ -1,10 +1,60 @@
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
-from django.db.models import Sum
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from django.db.models import Sum, Q
 from django.utils import timezone
-from .models import Payment, Installment
-from .serializers import PaymentSerializer, InstallmentSerializer
+from .models import Payment, Installment, Factura
+from .serializers import PaymentSerializer, InstallmentSerializer, FacturaSerializer
 from apps.authentication.permissions import IsOwnerOrAdmin
+
+
+class FacturaListCreateView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+    serializer_class = FacturaSerializer
+
+    def get_queryset(self):
+        qs = Factura.objects.select_related('client', 'created_by')
+        estado = self.request.query_params.get('estado')
+        client = self.request.query_params.get('client')
+        if estado:
+            qs = qs.filter(estado=estado)
+        if client:
+            qs = qs.filter(client_id=client)
+        return qs
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+
+class FacturaDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+    queryset = Factura.objects.select_related('client', 'created_by')
+    serializer_class = FacturaSerializer
+
+
+class FacturaResumenView(APIView):
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+
+    def get(self, request):
+        qs = Factura.objects.all()
+        total = qs.aggregate(t=Sum('monto'))['t'] or 0
+        cobrado = qs.filter(estado='cobrado').aggregate(t=Sum('monto'))['t'] or 0
+        pendiente = qs.filter(estado__in=['pendiente', 'facturado']).aggregate(t=Sum('monto'))['t'] or 0
+        from datetime import date
+        vencidas = qs.filter(
+            estado__in=['pendiente', 'facturado'],
+            fecha_vencimiento__lt=date.today()
+        ).count()
+        return Response({
+            'total_facturado': int(total),
+            'total_cobrado': int(cobrado),
+            'total_pendiente': int(pendiente),
+            'count_total': qs.count(),
+            'count_cobrado': qs.filter(estado='cobrado').count(),
+            'count_pendiente': qs.filter(estado__in=['pendiente', 'facturado']).count(),
+            'count_vencidas': vencidas,
+        })
 
 
 class PaymentListCreateView(generics.ListCreateAPIView):

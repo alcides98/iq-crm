@@ -1,8 +1,13 @@
 import axios from 'axios'
 import { useAuthStore } from '@/store/authStore'
 
+// En desarrollo usa el proxy de Vite (/api → localhost:8000).
+// En producción el build estático no tiene proxy → lee VITE_API_URL
+// (p.ej. https://iq-crm-backend.onrender.com/api/v1).
+const BASE_URL = import.meta.env.VITE_API_URL || '/api/v1'
+
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
 })
 
@@ -23,7 +28,7 @@ api.interceptors.response.use(
       const refreshToken = useAuthStore.getState().refreshToken
       if (refreshToken) {
         try {
-          const { data } = await axios.post('/api/v1/auth/refresh/', { refresh: refreshToken })
+          const { data } = await axios.post(`${BASE_URL}/auth/refresh/`, { refresh: refreshToken })
           useAuthStore.getState().setAuth(
             useAuthStore.getState().user,
             data.access,

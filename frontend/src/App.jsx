@@ -8,6 +8,7 @@ import Dashboard from '@/pages/Dashboard'
 import Pipeline from '@/pages/Pipeline'
 import Clients from '@/pages/Clients'
 import Tasks from '@/pages/Tasks'
+import Facturas from '@/pages/Facturas'
 import Settings from '@/pages/Settings'
 
 function ThemeApplier() {
@@ -42,6 +43,7 @@ export default function App() {
           <Route path="pipeline" element={<Pipeline />} />
           <Route path="clients" element={<Clients />} />
           <Route path="tasks" element={<Tasks />} />
+          <Route path="facturas" element={<Facturas />} />
           <Route path="settings" element={<Settings />} />
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

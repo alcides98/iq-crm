@@ -1,5 +1,24 @@
 from rest_framework import serializers
-from .models import Payment, Installment
+from .models import Payment, Installment, Factura
+
+
+class FacturaSerializer(serializers.ModelSerializer):
+    client_name = serializers.SerializerMethodField()
+    dias_atraso = serializers.ReadOnlyField()
+    dias_para_vencer = serializers.ReadOnlyField()
+
+    class Meta:
+        model = Factura
+        fields = [
+            'id', 'client', 'client_name', 'numero_factura', 'fecha',
+            'detalle_servicio', 'monto', 'fecha_vencimiento', 'fecha_cobro',
+            'estado', 'notas', 'dias_atraso', 'dias_para_vencer',
+            'created_by', 'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'created_by', 'created_at', 'updated_at']
+
+    def get_client_name(self, obj):
+        return obj.client.company_name if obj.client else None
 
 
 class InstallmentSerializer(serializers.ModelSerializer):

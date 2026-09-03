@@ -2,6 +2,67 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import api from '@/services/api'
 
+// ── Facturas ─────────────────────────────────────────────────────────────────
+
+export function useFacturas(filters = {}) {
+  const params = new URLSearchParams()
+  if (filters.estado) params.append('estado', filters.estado)
+  if (filters.client) params.append('client', filters.client)
+  return useQuery({
+    queryKey: ['facturas', filters],
+    queryFn: () => api.get(`/billing/facturas/?${params}`).then(r => r.data),
+  })
+}
+
+export function useFacturaResumen() {
+  return useQuery({
+    queryKey: ['facturas-resumen'],
+    queryFn: () => api.get('/billing/facturas/resumen/').then(r => r.data),
+  })
+}
+
+export function useCreateFactura() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data) => api.post('/billing/facturas/', data).then(r => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['facturas'] })
+      qc.invalidateQueries({ queryKey: ['facturas-resumen'] })
+      toast.success('Factura registrada')
+    },
+    onError: (err) => {
+      const msg = Object.values(err.response?.data || {})[0]?.[0] || 'Error al registrar factura'
+      toast.error(msg)
+    },
+  })
+}
+
+export function useUpdateFactura() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...data }) => api.patch(`/billing/facturas/${id}/`, data).then(r => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['facturas'] })
+      qc.invalidateQueries({ queryKey: ['facturas-resumen'] })
+      toast.success('Factura actualizada')
+    },
+    onError: () => toast.error('Error al actualizar factura'),
+  })
+}
+
+export function useDeleteFactura() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id) => api.delete(`/billing/facturas/${id}/`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['facturas'] })
+      qc.invalidateQueries({ queryKey: ['facturas-resumen'] })
+      toast.success('Factura eliminada')
+    },
+    onError: () => toast.error('Error al eliminar factura'),
+  })
+}
+
 export function usePayments() {
   return useQuery({
     queryKey: ['payments'],
