@@ -13,25 +13,19 @@ DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
-DJANGO_APPS = [
+INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.auth',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-]
-
-THIRD_PARTY_APPS = [
-    'django_tenants',
+    # Third party
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
     'django_filters',
     'django_celery_beat',
-]
-
-LOCAL_APPS = [
-    'apps.tenants',
+    # Local apps
     'apps.authentication',
     'apps.clients',
     'apps.pipeline',
@@ -42,10 +36,7 @@ LOCAL_APPS = [
     'apps.dashboard',
 ]
 
-INSTALLED_APPS = ['django_tenants'] + DJANGO_APPS + THIRD_PARTY_APPS[1:] + LOCAL_APPS
-
 MIDDLEWARE = [
-    'django_tenants.middleware.main.TenantMainMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -78,7 +69,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django_tenants.postgresql_backend',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.environ.get('DB_NAME', 'wolf_crm'),
         'USER': os.environ.get('DB_USER', 'postgres'),
         'PASSWORD': os.environ.get('DB_PASSWORD', 'postgres'),
@@ -87,42 +78,9 @@ DATABASES = {
     }
 }
 
-DATABASE_ROUTERS = ['django_tenants.routers.TenantSyncRouter']
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'authentication.User'
-
-TENANT_MODEL = 'tenants.Tenant'
-TENANT_DOMAIN_MODEL = 'tenants.Domain'
-
-SHARED_APPS = [
-    'django_tenants',
-    'apps.tenants',
-    'django.contrib.contenttypes',
-    'django.contrib.auth',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'rest_framework',
-    'rest_framework_simplejwt',
-    'corsheaders',
-    'django_filters',
-    'django_celery_beat',
-]
-
-TENANT_APPS = [
-    'apps.authentication',
-    'apps.clients',
-    'apps.pipeline',
-    'apps.tasks',
-    'apps.billing',
-    'apps.invoicing',
-    'apps.notifications',
-    'apps.dashboard',
-]
-
-INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -168,13 +126,16 @@ SIMPLE_JWT = {
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
+    'http://localhost:3001',
     'http://127.0.0.1:5173',
+    'http://127.0.0.1:3001',
 ]
 
 CORS_ALLOW_CREDENTIALS = True
 
-CELERY_BROKER_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
-CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+# ── Celery ─────────────────────────────────────────────────────────────
+CELERY_BROKER_URL = os.environ.get('REDIS_URL', 'redis://localhost:6380/0')
+CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL', 'redis://localhost:6380/0')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
@@ -195,13 +156,13 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
-# SIFEN Paraguay
+# ── SIFEN Paraguay ──────────────────────────────────────────────────────
 SIFEN_PRODUCTION = os.environ.get('SIFEN_PRODUCTION', 'False') == 'True'
 SIFEN_RUC = os.environ.get('SIFEN_RUC', '')
 SIFEN_CERT_PATH = os.environ.get('SIFEN_CERT_PATH', '')
 SIFEN_CERT_PASSWORD = os.environ.get('SIFEN_CERT_PASSWORD', '')
 
-# Email
+# ── Email ───────────────────────────────────────────────────────────────
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.sendgrid.net')
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))

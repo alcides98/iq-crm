@@ -1,5 +1,8 @@
-from django.db.models.signals import post_save
-from django.dispatch import receiver
+"""
+Seed de datos iniciales del pipeline.
+Sin multi-tenant: se ejecuta en la primera migracion via management command
+o en el primer arrange de datos de la app.
+"""
 
 DEFAULT_STAGES = [
     {'name': 'Nueva',               'slug': 'nueva',       'color': 'blue',   'probability': 10,  'order': 1, 'is_active': True, 'is_terminal': False, 'is_won': False},
@@ -11,22 +14,15 @@ DEFAULT_STAGES = [
 ]
 
 
-@receiver(post_save, sender='tenants.Tenant')
-def seed_pipeline_stages_for_new_tenant(sender, instance, created, **kwargs):
-    """Auto-seed default pipeline stages when a new tenant schema is created."""
-    if not created:
-        return
+def seed_pipeline_stages():
+    """Inserta las etapas default del pipeline si no existen."""
     try:
-        from django_tenants.utils import schema_context
         from apps.pipeline.models import PipelineStage
-        with schema_context(instance.schema_name):
-            for stage_data in DEFAULT_STAGES:
-                PipelineStage.objects.get_or_create(
-                    slug=stage_data['slug'],
-                    defaults=stage_data,
-                )
+        for stage_data in DEFAULT_STAGES:
+            PipelineStage.objects.get_or_create(
+                slug=stage_data['slug'],
+                defaults=stage_data,
+            )
     except Exception as e:
         import logging
-        logging.getLogger(__name__).warning(
-            f'Could not seed pipeline stages for tenant {instance.schema_name}: {e}'
-        )
+        logging.getLogger(__name__).warning(f'Could not seed pipeline stages: {e}')
