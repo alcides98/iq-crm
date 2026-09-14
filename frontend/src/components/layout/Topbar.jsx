@@ -28,11 +28,11 @@ export default function Topbar({ title }) {
           </div>
         )}
 
-        {/* Insight Analytics logo — next to theme toggle, no background */}
+        {/* Insight Analytics logo — transparent PNG, no background */}
         <img
           src="/insight-logo.png"
           alt="Insight Analytics"
-          className="h-10 w-auto object-contain dark:invert"
+          className="h-14 w-auto object-contain dark:invert"
         />
 
         {/* Theme toggle */}
@@ -44,19 +44,13 @@ export default function Topbar({ title }) {
           {dark ? <SunIcon /> : <MoonIcon />}
         </button>
 
-        {/* Company logo — circular */}
+        {/* Company logo — static file, always available */}
         <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 bg-wolf-600 flex items-center justify-center ring-2 ring-gray-100 dark:ring-gray-800">
-          {logoSrc ? (
-            <img
-              src={logoSrc}
-              alt={company?.name}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <span className="text-white text-sm font-bold">
-              {(company?.name?.[0] || 'W').toUpperCase()}
-            </span>
-          )}
+          <img
+            src="/wolf-logo.jpeg"
+            alt="Wolf Consulting"
+            className="w-full h-full object-cover"
+          />
         </div>
       </div>
     </header>

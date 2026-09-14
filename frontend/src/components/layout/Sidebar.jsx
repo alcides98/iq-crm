@@ -42,17 +42,11 @@ export default function Sidebar() {
       <div className="px-5 py-5 border-b border-gray-100 dark:border-gray-900">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 shadow-apple-sm bg-wolf-600 flex items-center justify-center">
-            {company?.logo_file_url ? (
-              <img
-                src={resolveMediaUrl(company.logo_file_url)}
-                alt={company.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span className="text-white text-sm font-bold tracking-tight">
-                {(company?.name?.[0] || 'C').toUpperCase()}
-              </span>
-            )}
+            <img
+              src="/wolf-logo.jpeg"
+              alt="Wolf Consulting"
+              className="w-full h-full object-cover"
+            />
           </div>
           <div>
             <p className="text-[11px] font-bold text-wolf-600 dark:text-wolf-400 uppercase tracking-widest leading-none">
