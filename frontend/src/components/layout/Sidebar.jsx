@@ -47,13 +47,13 @@ export default function Sidebar() {
           </div>
           <div>
             <p className="text-[11px] font-bold text-wolf-600 dark:text-wolf-400 uppercase tracking-widest leading-none">
-              IQ-CRM
+              INSIGHT
             </p>
             <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-none mt-0.5">
               {company?.name || 'CRM'}
             </p>
             <p className="text-[10px] text-gray-400 dark:text-gray-600 mt-0.5 leading-none">
-              {company?.tagline || 'Powered by IQ Data'}
+              {company?.tagline || 'Powered by Insight Analytics'}
             </p>
           </div>
         </div>
@@ -111,16 +111,16 @@ export default function Sidebar() {
           </button>
         </div>
 
-        {/* IQ Data branding */}
+        {/* Insight Analytics branding */}
         <div className="px-2 pb-3 pt-1">
           <div className="border-t border-gray-100 dark:border-gray-900 pt-3 flex flex-col items-center gap-1">
             <img
-              src={dark ? '/iqdata-dark.png' : '/iqdata-light.png'}
-              alt="IQ Data"
+              src={dark ? '/insight-logo-dark.png' : '/insight-logo-light.png'}
+              alt="Insight Analytics"
               className="h-20 w-auto object-contain"
             />
             <p className="text-[10px] text-gray-300 dark:text-gray-700 font-medium">
-              Desarrollado por IQ DATA
+              Desarrollado por Insight Analytics
             </p>
           </div>
         </div>

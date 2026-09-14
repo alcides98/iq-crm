@@ -33,8 +33,8 @@ export default function LoginPage() {
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
               <img
-                src={dark ? '/iqdata-dark.png' : '/iqdata-light.png'}
-                alt="IQ Data"
+                src={dark ? '/insight-logo-dark.png' : '/insight-logo-light.png'}
+                alt="Insight Analytics"
                 className="h-36 w-auto object-contain"
               />
             </div>
@@ -81,7 +81,7 @@ export default function LoginPage() {
         {/* Footer */}
         <div className="text-center mt-6">
           <p className="text-xs text-gray-400 dark:text-gray-600 font-medium">
-            Desarrollado por IQ DATA
+            Desarrollado por Insight Analytics
           </p>
         </div>
       </div>

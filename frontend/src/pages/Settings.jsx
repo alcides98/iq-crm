@@ -121,8 +121,8 @@ function TabProfile() {
         </div>
       </div>
       <div className="card p-5">
-        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-0.5">IQ-CRM v1.0</p>
-        <p className="text-sm text-gray-400 dark:text-gray-600">Desarrollado por IQ Data</p>
+        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-0.5">Insight Analytics CRM v1.0</p>
+        <p className="text-sm text-gray-400 dark:text-gray-600">Desarrollado por Insight Analytics</p>
       </div>
     </div>
   )

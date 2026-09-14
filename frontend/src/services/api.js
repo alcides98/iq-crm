@@ -3,7 +3,7 @@ import { useAuthStore } from '@/store/authStore'
 
 // En desarrollo usa el proxy de Vite (/api → localhost:8000).
 // En producción el build estático no tiene proxy → lee VITE_API_URL
-// (p.ej. https://iq-crm-backend.onrender.com/api/v1).
+// (p.ej. https://insight-analytics-crm-api.onrender.com/api/v1).
 const BASE_URL = import.meta.env.VITE_API_URL || '/api/v1'
 
 const api = axios.create({

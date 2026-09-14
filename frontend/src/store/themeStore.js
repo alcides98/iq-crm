@@ -7,6 +7,6 @@ export const useThemeStore = create(
       dark: false,
       toggle: () => set(s => ({ dark: !s.dark })),
     }),
-    { name: 'iqdata-crm-theme' }
+    { name: 'insight-analytics-crm-theme' }
   )
 )

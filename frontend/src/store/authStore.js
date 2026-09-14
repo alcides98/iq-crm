@@ -10,6 +10,6 @@ export const useAuthStore = create(
       setAuth: (user, token, refreshToken) => set({ user, token, refreshToken }),
       logout: () => set({ user: null, token: null, refreshToken: null }),
     }),
-    { name: 'iq-crm-auth' }
+    { name: 'insight-analytics-crm-auth' }
   )
 )

@@ -14,7 +14,7 @@ const PAGE_TITLES = {
 
 export default function Layout() {
   const location = useLocation()
-  const title = PAGE_TITLES[location.pathname] || 'IQ Data CRM'
+  const title = PAGE_TITLES[location.pathname] || 'Insight Analytics CRM'
 
   return (
     <div className="flex h-screen bg-[#f5f5f7] dark:bg-[#000000]">
