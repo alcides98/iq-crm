@@ -2,23 +2,38 @@ import { useAlerts } from '@/hooks/useKPIs'
 import { useThemeStore } from '@/store/themeStore'
 import { useCompanySettings } from '@/hooks/useUsers'
 
+function resolveMediaUrl(url) {
+  if (!url) return null
+  if (url.startsWith('http')) return url
+  const apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/api\/v1\/?$/, '')
+  return apiBase ? `${apiBase}${url}` : url
+}
+
 export default function Topbar({ title }) {
   const { data: alertData } = useAlerts()
   const alertCount = alertData?.total || 0
   const { dark, toggle } = useThemeStore()
   const { data: company } = useCompanySettings()
+  const logoSrc = resolveMediaUrl(company?.logo_file_url)
 
   return (
     <header className="h-14 bg-white/80 dark:bg-[#111111]/80 backdrop-blur-xl border-b border-gray-100 dark:border-gray-900 flex items-center justify-between px-6 sticky top-0 z-20">
       <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 tracking-tight">{title}</h2>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         {alertCount > 0 && (
           <div className="flex items-center gap-1.5 bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400 text-xs font-medium px-2.5 py-1 rounded-full border border-red-100 dark:border-red-900/50">
             <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
             {alertCount} alerta{alertCount > 1 ? 's' : ''}
           </div>
         )}
+
+        {/* Insight Analytics logo — next to theme toggle, no background */}
+        <img
+          src="/insight-logo.png"
+          alt="Insight Analytics"
+          className="h-7 w-auto object-contain dark:invert opacity-70 hover:opacity-100 transition-opacity"
+        />
 
         {/* Theme toggle */}
         <button
@@ -31,9 +46,9 @@ export default function Topbar({ title }) {
 
         {/* Company logo — circular */}
         <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 bg-wolf-600 flex items-center justify-center ring-2 ring-gray-100 dark:ring-gray-800">
-          {company?.logo_file_url ? (
+          {logoSrc ? (
             <img
-              src={company.logo_file_url}
+              src={logoSrc}
               alt={company?.name}
               className="w-full h-full object-cover"
             />
