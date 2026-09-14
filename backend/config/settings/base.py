@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'django_filters',
     'django_celery_beat',
     # Local apps
+    'apps.tenants',
     'apps.authentication',
     'apps.clients',
     'apps.pipeline',
