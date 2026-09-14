@@ -431,7 +431,7 @@ export default function Facturas() {
 
       {/* Modal Nueva Factura */}
       <Modal
-        isOpen={showForm}
+        open={showForm}
         onClose={() => setShowForm(false)}
         title="Nueva factura"
         size="lg"
@@ -446,7 +446,7 @@ export default function Facturas() {
 
       {/* Modal Editar */}
       <Modal
-        isOpen={!!editing}
+        open={!!editing}
         onClose={() => setEditing(null)}
         title="Editar factura"
         size="lg"
@@ -464,7 +464,7 @@ export default function Facturas() {
 
       {/* Confirmar borrado */}
       <ConfirmDialog
-        isOpen={!!confirmDelete}
+        open={!!confirmDelete}
         onClose={() => setConfirmDelete(null)}
         onConfirm={handleDelete}
         title="Eliminar factura"
