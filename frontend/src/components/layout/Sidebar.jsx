@@ -65,12 +65,12 @@ export default function Sidebar() {
               {company?.tagline || 'Powered by Insight Analytics'}
             </p>
           </div>
-          {/* Insight Analytics logo — top right, no background */}
+          {/* Insight Analytics logo — top right, transparent PNG */}
           <div className="flex-shrink-0">
             <img
-              src={dark ? '/insight-logo-dark.png' : '/insight-logo-light.png'}
+              src="/insight-logo.png"
               alt="Insight Analytics"
-              className="h-8 w-auto object-contain"
+              className="h-8 w-auto object-contain dark:invert"
             />
           </div>
         </div>

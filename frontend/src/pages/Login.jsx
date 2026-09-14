@@ -32,11 +32,11 @@ export default function LoginPage() {
           {/* Logo */}
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
-              <div className="w-36 h-36 rounded-full overflow-hidden flex items-center justify-center bg-gray-100 dark:bg-gray-800 shadow-apple-sm">
+              <div className="w-36 h-36 rounded-full overflow-hidden flex items-center justify-center border border-gray-100 dark:border-gray-800">
                 <img
-                  src={dark ? '/insight-logo-dark.png' : '/insight-logo-light.png'}
+                  src="/insight-logo.png"
                   alt="Insight Analytics"
-                  className="w-full h-full object-cover"
+                  className="w-28 h-28 object-contain dark:invert"
                 />
               </div>
             </div>
