@@ -5,6 +5,15 @@ import { useLogout } from '@/hooks/useAuth'
 import { useCompanySettings } from '@/hooks/useUsers'
 import clsx from 'clsx'
 
+// Si el backend devuelve una URL relativa (/media/...), la prefijamos con
+// la URL base del API para que el frontend pueda cargarla correctamente.
+function resolveMediaUrl(url) {
+  if (!url) return null
+  if (url.startsWith('http')) return url
+  const apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/api\/v1\/?$/, '')
+  return apiBase ? `${apiBase}${url}` : url
+}
+
 const NAV_ITEMS = [
   { to: '/dashboard', label: 'Dashboard',     icon: DashboardIcon },
   { to: '/pipeline',  label: 'Pipeline',      icon: PipelineIcon },
@@ -35,7 +44,7 @@ export default function Sidebar() {
           <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 shadow-apple-sm bg-wolf-600 flex items-center justify-center">
             {company?.logo_file_url ? (
               <img
-                src={company.logo_file_url}
+                src={resolveMediaUrl(company.logo_file_url)}
                 alt={company.name}
                 className="w-full h-full object-cover"
               />
@@ -45,16 +54,24 @@ export default function Sidebar() {
               </span>
             )}
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <p className="text-[11px] font-bold text-wolf-600 dark:text-wolf-400 uppercase tracking-widest leading-none">
               INSIGHT
             </p>
-            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-none mt-0.5">
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-none mt-0.5 truncate">
               {company?.name || 'CRM'}
             </p>
             <p className="text-[10px] text-gray-400 dark:text-gray-600 mt-0.5 leading-none">
               {company?.tagline || 'Powered by Insight Analytics'}
             </p>
+          </div>
+          {/* Insight Analytics logo — top right, no background */}
+          <div className="flex-shrink-0">
+            <img
+              src={dark ? '/insight-logo-dark.png' : '/insight-logo-light.png'}
+              alt="Insight Analytics"
+              className="h-8 w-auto object-contain"
+            />
           </div>
         </div>
       </div>
@@ -111,18 +128,11 @@ export default function Sidebar() {
           </button>
         </div>
 
-        {/* Insight Analytics branding */}
-        <div className="px-2 pb-3 pt-1">
-          <div className="border-t border-gray-100 dark:border-gray-900 pt-3 flex flex-col items-center gap-1">
-            <img
-              src={dark ? '/insight-logo-dark.png' : '/insight-logo-light.png'}
-              alt="Insight Analytics"
-              className="h-20 w-auto object-contain"
-            />
-            <p className="text-[10px] text-gray-300 dark:text-gray-700 font-medium">
-              Desarrollado por Insight Analytics
-            </p>
-          </div>
+        {/* Footer caption */}
+        <div className="px-4 pb-2 pt-1">
+          <p className="text-[10px] text-gray-300 dark:text-gray-700 font-medium text-center">
+            Desarrollado por Insight Analytics
+          </p>
         </div>
       </div>
     </aside>

@@ -1,5 +1,13 @@
 import { useState } from 'react'
 import { useAuthStore } from '@/store/authStore'
+
+// Si el backend devuelve URL relativa (/media/...) la prefijamos con la base del API
+function resolveMediaUrl(url) {
+  if (!url) return null
+  if (url.startsWith('http')) return url
+  const apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/api\/v1\/?$/, '')
+  return apiBase ? `${apiBase}${url}` : url
+}
 import {
   useUsers, useCreateUser, useUpdateUser, useDeactivateUser,
   useCompanySettings, useUpdateCompanySettings,
@@ -279,7 +287,7 @@ function TabCompany() {
     }
   }
 
-  const currentLogoSrc = logoPreview || settings?.logo_file_url || null
+  const currentLogoSrc = logoPreview || resolveMediaUrl(settings?.logo_file_url) || null
 
   if (isLoading) return <PageSpinner />
 

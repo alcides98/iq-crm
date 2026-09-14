@@ -32,11 +32,13 @@ export default function LoginPage() {
           {/* Logo */}
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
-              <img
-                src={dark ? '/insight-logo-dark.png' : '/insight-logo-light.png'}
-                alt="Insight Analytics"
-                className="h-36 w-auto object-contain"
-              />
+              <div className="w-36 h-36 rounded-full overflow-hidden flex items-center justify-center bg-gray-100 dark:bg-gray-800 shadow-apple-sm">
+                <img
+                  src={dark ? '/insight-logo-dark.png' : '/insight-logo-light.png'}
+                  alt="Insight Analytics"
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </div>
             <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2 leading-snug">
               Bienvenidos, convertimos datos en resultados.
