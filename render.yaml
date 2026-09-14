@@ -1,4 +1,4 @@
-# Blueprint de Render — IQ-CRM (Wolf Consulting Group)
+# Blueprint de Render — Insight Analytics CRM
 # Despliega backend (Web Service) y frontend (Static Site).
 #
 # La base de datos (Neon) es externa a Render.
@@ -6,8 +6,8 @@
 # (sync: false = secreto, nunca se guarda en el repo).
 #
 # URLs publicas resultantes:
-#   Frontend:   https://iq-crm.onrender.com
-#   Backend API: https://iq-crm-backend.onrender.com/api/v1
+#   Frontend:    https://insight-analytics-crm.onrender.com
+#   Backend API: https://insight-analytics-crm-api.onrender.com/api/v1
 #
 # Para agregar alertas automaticas en el futuro, descomentar las
 # secciones de Celery Worker y Celery Beat al final de este archivo.
@@ -17,13 +17,13 @@ services:
   # ── Frontend React (Static Site — gratis) ────────────────────────────
   - type: web
     runtime: static
-    name: iq-crm
+    name: insight-analytics-crm
     rootDir: frontend
     buildCommand: "npm install && npm run build"
-    staticPublishPath: dist
+    staticPublishPath: ./dist
     envVars:
       - key: VITE_API_URL
-        value: "https://iq-crm-backend.onrender.com/api/v1"
+        value: "https://insight-analytics-crm-api.onrender.com/api/v1"
     routes:
       # SPA fallback: toda ruta que no sea un archivo real → index.html
       - type: rewrite
@@ -33,7 +33,7 @@ services:
   # ── Backend Django + DRF ──────────────────────────────────────────────
   - type: web
     runtime: python
-    name: iq-crm-backend
+    name: insight-analytics-crm-api
     region: ohio          # misma region que Neon (AWS US East 2 — minimiza latencia)
     plan: starter         # $7/mes — siempre encendido, sin cold start
     rootDir: backend
@@ -53,11 +53,11 @@ services:
       - key: DEBUG
         value: "False"
       - key: ALLOWED_HOSTS
-        value: "iq-crm-backend.onrender.com"
+        value: "insight-analytics-crm-api.onrender.com"
       - key: DATABASE_URL
         sync: false       # Pegar la connection string de Neon aqui
       - key: CORS_ALLOWED_ORIGINS
-        value: "https://iq-crm.onrender.com"
+        value: "https://insight-analytics-crm.onrender.com"
       - key: INITIAL_ADMIN_EMAIL
         value: "acardozo@iqdata.com.py"
       - key: INITIAL_ADMIN_PASSWORD
@@ -70,7 +70,7 @@ services:
 #
 #   - type: worker
 #     runtime: python
-#     name: iq-crm-celery
+#     name: insight-analytics-crm-worker
 #     region: ohio
 #     plan: starter
 #     rootDir: backend
@@ -81,20 +81,20 @@ services:
 #         value: config.settings.production
 #       - key: SECRET_KEY
 #         fromService:
-#           name: iq-crm-backend
+#           name: insight-analytics-crm-api
 #           type: web
 #           envVarKey: SECRET_KEY
 #       - key: DATABASE_URL
 #         sync: false
 #       - key: REDIS_URL
 #         fromService:
-#           name: iq-crm-redis
+#           name: insight-analytics-crm-redis
 #           type: redis
 #           property: connectionString
 #
 #   - type: worker
 #     runtime: python
-#     name: iq-crm-beat
+#     name: insight-analytics-crm-beat
 #     region: ohio
 #     plan: starter
 #     rootDir: backend
@@ -105,19 +105,19 @@ services:
 #         value: config.settings.production
 #       - key: SECRET_KEY
 #         fromService:
-#           name: iq-crm-backend
+#           name: insight-analytics-crm-api
 #           type: web
 #           envVarKey: SECRET_KEY
 #       - key: DATABASE_URL
 #         sync: false
 #       - key: REDIS_URL
 #         fromService:
-#           name: iq-crm-redis
+#           name: insight-analytics-crm-redis
 #           type: redis
 #           property: connectionString
 #
 #   - type: redis
-#     name: iq-crm-redis
+#     name: insight-analytics-crm-redis
 #     plan: free
 #     region: ohio
 #     ipAllowList: []
