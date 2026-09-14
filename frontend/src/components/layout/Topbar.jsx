@@ -32,7 +32,7 @@ export default function Topbar({ title }) {
         <img
           src="/insight-logo.png"
           alt="Insight Analytics"
-          className="h-7 w-auto object-contain dark:invert opacity-70 hover:opacity-100 transition-opacity"
+          className="h-10 w-auto object-contain dark:invert"
         />
 
         {/* Theme toggle */}

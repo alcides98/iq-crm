@@ -54,24 +54,16 @@ export default function Sidebar() {
               </span>
             )}
           </div>
-          <div className="flex-1 min-w-0">
+          <div>
             <p className="text-[11px] font-bold text-wolf-600 dark:text-wolf-400 uppercase tracking-widest leading-none">
               INSIGHT
             </p>
-            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-none mt-0.5 truncate">
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-none mt-0.5">
               {company?.name || 'CRM'}
             </p>
             <p className="text-[10px] text-gray-400 dark:text-gray-600 mt-0.5 leading-none">
               {company?.tagline || 'Powered by Insight Analytics'}
             </p>
-          </div>
-          {/* Insight Analytics logo — top right, transparent PNG */}
-          <div className="flex-shrink-0">
-            <img
-              src="/insight-logo.png"
-              alt="Insight Analytics"
-              className="h-8 w-auto object-contain dark:invert"
-            />
           </div>
         </div>
       </div>
