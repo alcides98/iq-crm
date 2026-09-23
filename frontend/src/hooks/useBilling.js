@@ -2,6 +2,129 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import api from '@/services/api'
 
+// ── Pagos parciales de Factura ────────────────────────────────────────────────
+
+export function useCreatePagoFactura() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ facturaId, ...data }) =>
+      api.post(`/billing/facturas/${facturaId}/pagos/`, data).then(r => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['facturas'] })
+      qc.invalidateQueries({ queryKey: ['facturas-resumen'] })
+      toast.success('Pago registrado')
+    },
+    onError: (err) => {
+      const msg = Object.values(err.response?.data || {})[0]?.[0] || 'Error al registrar pago'
+      toast.error(msg)
+    },
+  })
+}
+
+export function useDeletePagoFactura() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (pagoId) => api.delete(`/billing/pagos-factura/${pagoId}/`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['facturas'] })
+      qc.invalidateQueries({ queryKey: ['facturas-resumen'] })
+      toast.success('Pago eliminado')
+    },
+    onError: () => toast.error('Error al eliminar pago'),
+  })
+}
+
+// ── Egresos ───────────────────────────────────────────────────────────────────
+
+export function useEgresos(filters = {}) {
+  const params = new URLSearchParams()
+  if (filters.estado) params.append('estado', filters.estado)
+  if (filters.categoria) params.append('categoria', filters.categoria)
+  return useQuery({
+    queryKey: ['egresos', filters],
+    queryFn: () => api.get(`/billing/egresos/?${params}`).then(r => r.data),
+  })
+}
+
+export function useEgresoResumen() {
+  return useQuery({
+    queryKey: ['egresos-resumen'],
+    queryFn: () => api.get('/billing/egresos/resumen/').then(r => r.data),
+  })
+}
+
+export function useCreateEgreso() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data) => api.post('/billing/egresos/', data).then(r => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['egresos'] })
+      qc.invalidateQueries({ queryKey: ['egresos-resumen'] })
+      toast.success('Egreso registrado')
+    },
+    onError: (err) => {
+      const msg = Object.values(err.response?.data || {})[0]?.[0] || 'Error al registrar egreso'
+      toast.error(msg)
+    },
+  })
+}
+
+export function useUpdateEgreso() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...data }) => api.patch(`/billing/egresos/${id}/`, data).then(r => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['egresos'] })
+      qc.invalidateQueries({ queryKey: ['egresos-resumen'] })
+      toast.success('Egreso actualizado')
+    },
+    onError: () => toast.error('Error al actualizar egreso'),
+  })
+}
+
+export function useDeleteEgreso() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id) => api.delete(`/billing/egresos/${id}/`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['egresos'] })
+      qc.invalidateQueries({ queryKey: ['egresos-resumen'] })
+      toast.success('Egreso eliminado')
+    },
+    onError: () => toast.error('Error al eliminar egreso'),
+  })
+}
+
+export function useCreatePagoEgreso() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ egresoId, ...data }) =>
+      api.post(`/billing/egresos/${egresoId}/pagos/`, data).then(r => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['egresos'] })
+      qc.invalidateQueries({ queryKey: ['egresos-resumen'] })
+      toast.success('Pago registrado')
+    },
+    onError: (err) => {
+      const msg = Object.values(err.response?.data || {})[0]?.[0] || 'Error al registrar pago'
+      toast.error(msg)
+    },
+  })
+}
+
+export function useDeletePagoEgreso() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (pagoId) => api.delete(`/billing/pagos-egreso/${pagoId}/`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['egresos'] })
+      qc.invalidateQueries({ queryKey: ['egresos-resumen'] })
+      toast.success('Pago eliminado')
+    },
+    onError: () => toast.error('Error al eliminar pago'),
+  })
+}
+
 // ── Facturas ─────────────────────────────────────────────────────────────────
 
 export function useFacturas(filters = {}) {

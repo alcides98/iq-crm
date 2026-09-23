@@ -4,17 +4,25 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.db.models import Sum, Q
 from django.utils import timezone
-from .models import Payment, Installment, Factura
-from .serializers import PaymentSerializer, InstallmentSerializer, FacturaSerializer
+from datetime import date
+
+from .models import Payment, Installment, Factura, PagoFactura, Egreso, PagoEgreso
+from .serializers import (
+    PaymentSerializer, InstallmentSerializer,
+    FacturaSerializer, PagoFacturaSerializer,
+    EgresoSerializer, PagoEgresoSerializer,
+)
 from apps.authentication.permissions import IsOwnerOrAdmin
 
+
+# ─── Factura ──────────────────────────────────────────────────────────────────
 
 class FacturaListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
     serializer_class = FacturaSerializer
 
     def get_queryset(self):
-        qs = Factura.objects.select_related('client', 'created_by')
+        qs = Factura.objects.select_related('client', 'created_by').prefetch_related('pagos')
         estado = self.request.query_params.get('estado')
         client = self.request.query_params.get('client')
         if estado:
@@ -29,7 +37,7 @@ class FacturaListCreateView(generics.ListCreateAPIView):
 
 class FacturaDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
-    queryset = Factura.objects.select_related('client', 'created_by')
+    queryset = Factura.objects.select_related('client', 'created_by').prefetch_related('pagos')
     serializer_class = FacturaSerializer
 
 
@@ -40,10 +48,9 @@ class FacturaResumenView(APIView):
         qs = Factura.objects.all()
         total = qs.aggregate(t=Sum('monto'))['t'] or 0
         cobrado = qs.filter(estado='cobrado').aggregate(t=Sum('monto'))['t'] or 0
-        pendiente = qs.filter(estado__in=['pendiente', 'facturado']).aggregate(t=Sum('monto'))['t'] or 0
-        from datetime import date
+        pendiente = qs.filter(estado__in=['pendiente', 'facturado', 'parcial']).aggregate(t=Sum('monto'))['t'] or 0
         vencidas = qs.filter(
-            estado__in=['pendiente', 'facturado'],
+            estado__in=['pendiente', 'facturado', 'parcial'],
             fecha_vencimiento__lt=date.today()
         ).count()
         return Response({
@@ -52,10 +59,135 @@ class FacturaResumenView(APIView):
             'total_pendiente': int(pendiente),
             'count_total': qs.count(),
             'count_cobrado': qs.filter(estado='cobrado').count(),
-            'count_pendiente': qs.filter(estado__in=['pendiente', 'facturado']).count(),
+            'count_pendiente': qs.filter(estado__in=['pendiente', 'facturado', 'parcial']).count(),
             'count_vencidas': vencidas,
         })
 
+
+# ─── PagoFactura ──────────────────────────────────────────────────────────────
+
+class PagoFacturaListCreateView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+    serializer_class = PagoFacturaSerializer
+
+    def get_queryset(self):
+        return PagoFactura.objects.filter(factura_id=self.kwargs['pk'])
+
+    def perform_create(self, serializer):
+        factura = Factura.objects.get(pk=self.kwargs['pk'])
+        pago = serializer.save(factura=factura)
+        _recalculate_factura(factura)
+
+
+class PagoFacturaDetailView(generics.DestroyAPIView):
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+    queryset = PagoFactura.objects.select_related('factura')
+
+    def perform_destroy(self, instance):
+        factura = instance.factura
+        instance.delete()
+        _recalculate_factura(factura)
+
+
+def _recalculate_factura(factura):
+    total_pagado = factura.pagos.aggregate(t=Sum('monto'))['t'] or 0
+    if total_pagado >= factura.monto:
+        factura.estado = 'cobrado'
+        if not factura.fecha_cobro:
+            factura.fecha_cobro = date.today()
+    elif total_pagado > 0:
+        factura.estado = 'parcial'
+        factura.fecha_cobro = None
+    # Si no hay pagos, se deja el estado actual (no revertir a facturado/pendiente)
+    factura.save(update_fields=['estado', 'fecha_cobro'])
+
+
+# ─── Egreso ───────────────────────────────────────────────────────────────────
+
+class EgresoListCreateView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+    serializer_class = EgresoSerializer
+
+    def get_queryset(self):
+        qs = Egreso.objects.select_related('created_by').prefetch_related('pagos')
+        estado = self.request.query_params.get('estado')
+        categoria = self.request.query_params.get('categoria')
+        if estado:
+            qs = qs.filter(estado=estado)
+        if categoria:
+            qs = qs.filter(categoria=categoria)
+        return qs
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+
+class EgresoDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+    queryset = Egreso.objects.select_related('created_by').prefetch_related('pagos')
+    serializer_class = EgresoSerializer
+
+
+class EgresoResumenView(APIView):
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+
+    def get(self, request):
+        qs = Egreso.objects.all()
+        total = qs.aggregate(t=Sum('monto'))['t'] or 0
+        pagado = qs.filter(estado='pagado').aggregate(t=Sum('monto'))['t'] or 0
+        pendiente = qs.filter(estado__in=['pendiente', 'parcial']).aggregate(t=Sum('monto'))['t'] or 0
+        vencidas = qs.filter(
+            estado__in=['pendiente', 'parcial'],
+            fecha_vencimiento__lt=date.today()
+        ).count()
+        return Response({
+            'total_egresado': int(total),
+            'total_pagado': int(pagado),
+            'total_pendiente': int(pendiente),
+            'count_total': qs.count(),
+            'count_pagado': qs.filter(estado='pagado').count(),
+            'count_pendiente': qs.filter(estado__in=['pendiente', 'parcial']).count(),
+            'count_vencidas': vencidas,
+        })
+
+
+# ─── PagoEgreso ───────────────────────────────────────────────────────────────
+
+class PagoEgresoListCreateView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+    serializer_class = PagoEgresoSerializer
+
+    def get_queryset(self):
+        return PagoEgreso.objects.filter(egreso_id=self.kwargs['pk'])
+
+    def perform_create(self, serializer):
+        egreso = Egreso.objects.get(pk=self.kwargs['pk'])
+        serializer.save(egreso=egreso)
+        _recalculate_egreso(egreso)
+
+
+class PagoEgresoDetailView(generics.DestroyAPIView):
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+    queryset = PagoEgreso.objects.select_related('egreso')
+
+    def perform_destroy(self, instance):
+        egreso = instance.egreso
+        instance.delete()
+        _recalculate_egreso(egreso)
+
+
+def _recalculate_egreso(egreso):
+    total_pagado = egreso.pagos.aggregate(t=Sum('monto'))['t'] or 0
+    if total_pagado >= egreso.monto:
+        egreso.estado = 'pagado'
+    elif total_pagado > 0:
+        egreso.estado = 'parcial'
+    else:
+        egreso.estado = 'pendiente'
+    egreso.save(update_fields=['estado'])
+
+
+# ─── Payment / Installment ────────────────────────────────────────────────────
 
 class PaymentListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
