@@ -1,9 +1,9 @@
 export function formatGS(amount) {
-  if (!amount && amount !== 0) return '₲ 0'
-  const num = parseInt(amount)
-  if (num >= 1_000_000_000) return `₲ ${(num / 1_000_000_000).toFixed(1)}B`
-  if (num >= 1_000_000) return `₲ ${(num / 1_000_000).toFixed(1)}M`
-  return `₲ ${num.toLocaleString('es-PY')}`
+  if (amount === null || amount === undefined || amount === '') return '₲ 0'
+  const num = parseFloat(amount)
+  if (isNaN(num)) return '₲ 0'
+  // Mostrar número exacto con separador de miles (es-PY usa puntos: ₲ 5.500.000)
+  return `₲ ${num.toLocaleString('es-PY', { maximumFractionDigits: 0 })}`
 }
 
 export function formatDate(dateStr) {

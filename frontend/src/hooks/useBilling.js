@@ -129,8 +129,10 @@ export function useDeletePagoEgreso() {
 
 export function useFacturas(filters = {}) {
   const params = new URLSearchParams()
-  if (filters.estado) params.append('estado', filters.estado)
-  if (filters.client) params.append('client', filters.client)
+  if (filters.estado)      params.append('estado',      filters.estado)
+  if (filters.client)      params.append('client',      filters.client)
+  if (filters.fecha_desde) params.append('fecha_desde', filters.fecha_desde)
+  if (filters.fecha_hasta) params.append('fecha_hasta', filters.fecha_hasta)
   return useQuery({
     queryKey: ['facturas', filters],
     queryFn: () => api.get(`/billing/facturas/?${params}`).then(r => r.data),

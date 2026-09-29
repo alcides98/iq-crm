@@ -365,15 +365,22 @@ function EgresoForm({ initial, onSubmit, onCancel, loading }) {
 // ── Tab: Ingresos (Facturas) ──────────────────────────────────────────────────
 
 function TabIngresos() {
-  const [filterEstado, setFilterEstado] = useState('')
-  const [filterClient, setFilterClient] = useState('')
-  const [showForm, setShowForm]   = useState(false)
-  const [editing, setEditing]     = useState(null)
-  const [pagosItem, setPagosItem] = useState(null)
+  const [filterEstado,  setFilterEstado]  = useState('')
+  const [filterClient,  setFilterClient]  = useState('')
+  const [filterDesde,   setFilterDesde]   = useState('')
+  const [filterHasta,   setFilterHasta]   = useState('')
+  const [showForm,   setShowForm]   = useState(false)
+  const [editing,    setEditing]    = useState(null)
+  const [pagosItem,  setPagosItem]  = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
 
-  const { data: facturasData, isLoading } = useFacturas({ estado: filterEstado || undefined, client: filterClient || undefined })
-  const { data: resumen }   = useFacturaResumen()
+  const { data: facturasData, isLoading } = useFacturas({
+    estado:      filterEstado  || undefined,
+    client:      filterClient  || undefined,
+    fecha_desde: filterDesde   || undefined,
+    fecha_hasta: filterHasta   || undefined,
+  })
+  const { data: resumen }     = useFacturaResumen()
   const { data: clientsData } = useClients()
 
   const createFactura = useCreateFactura()
@@ -382,6 +389,9 @@ function TabIngresos() {
 
   const facturas = facturasData?.results || facturasData || []
   const clients  = clientsData?.results  || clientsData  || []
+
+  const hasFilters = filterEstado || filterClient || filterDesde || filterHasta
+  const clearFilters = () => { setFilterEstado(''); setFilterClient(''); setFilterDesde(''); setFilterHasta('') }
 
   const handleCreate = async (data) => { await createFactura.mutateAsync(data); setShowForm(false) }
   const handleUpdate = async (data) => { await updateFactura.mutateAsync({ id: editing.id, ...data }); setEditing(null) }
@@ -397,23 +407,40 @@ function TabIngresos() {
         <SummaryCard label="Vencidas" value={resumen?.count_vencidas || 0} sub="sin cobrar y vencidas" color="red" />
       </div>
 
-      {/* Cabecera + filtros */}
-      <div className="flex flex-wrap items-center gap-3 justify-between">
-        <div className="flex gap-3 flex-wrap">
-          <select value={filterEstado} onChange={e => setFilterEstado(e.target.value)} className="input text-sm py-1.5 pr-8 w-auto">
-            <option value="">Todos los estados</option>
-            <option value="facturado">Facturado</option>
-            <option value="pendiente">Pendiente</option>
-            <option value="parcial">Pago parcial</option>
-            <option value="cobrado">Cobrado</option>
-          </select>
-          <select value={filterClient} onChange={e => setFilterClient(e.target.value)} className="input text-sm py-1.5 pr-8 w-auto">
-            <option value="">Todos los clientes</option>
-            {clients.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
-          </select>
-          {(filterEstado || filterClient) && (
-            <button onClick={() => { setFilterEstado(''); setFilterClient('') }} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 px-2">
-              Limpiar
+      {/* Filtros + botón */}
+      <div className="flex flex-wrap items-end gap-3 justify-between">
+        <div className="flex flex-wrap gap-3 items-end">
+          {/* Cliente */}
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">Cliente</label>
+            <select value={filterClient} onChange={e => setFilterClient(e.target.value)} className="input text-sm py-1.5 w-44">
+              <option value="">Todos</option>
+              {clients.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
+            </select>
+          </div>
+          {/* Estado */}
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">Estado</label>
+            <select value={filterEstado} onChange={e => setFilterEstado(e.target.value)} className="input text-sm py-1.5 w-36">
+              <option value="">Todos</option>
+              <option value="facturado">Facturado</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="parcial">Pago parcial</option>
+              <option value="cobrado">Cobrado</option>
+            </select>
+          </div>
+          {/* Periodo */}
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">Desde</label>
+            <input type="date" value={filterDesde} onChange={e => setFilterDesde(e.target.value)} className="input text-sm py-1.5 w-36" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">Hasta</label>
+            <input type="date" value={filterHasta} onChange={e => setFilterHasta(e.target.value)} className="input text-sm py-1.5 w-36" />
+          </div>
+          {hasFilters && (
+            <button onClick={clearFilters} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 pb-1.5">
+              Limpiar filtros
             </button>
           )}
         </div>

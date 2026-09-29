@@ -23,13 +23,20 @@ class FacturaListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         qs = Factura.objects.select_related('client', 'created_by').prefetch_related('pagos')
-        estado = self.request.query_params.get('estado')
-        client = self.request.query_params.get('client')
+        estado      = self.request.query_params.get('estado')
+        client      = self.request.query_params.get('client')
+        fecha_desde = self.request.query_params.get('fecha_desde')
+        fecha_hasta = self.request.query_params.get('fecha_hasta')
         if estado:
             qs = qs.filter(estado=estado)
         if client:
             qs = qs.filter(client_id=client)
-        return qs
+        if fecha_desde:
+            qs = qs.filter(fecha__gte=fecha_desde)
+        if fecha_hasta:
+            qs = qs.filter(fecha__lte=fecha_hasta)
+        # Ordenar primero por nombre de cliente, luego por fecha más reciente
+        return qs.order_by('client__company_name', '-fecha', '-created_at')
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
