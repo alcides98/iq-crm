@@ -139,10 +139,16 @@ export function useFacturas(filters = {}) {
   })
 }
 
-export function useFacturaResumen() {
+export function useFacturaResumen(filters = {}) {
+  const params = new URLSearchParams()
+  if (filters.estado)      params.append('estado',      filters.estado)
+  if (filters.client)      params.append('client',      filters.client)
+  if (filters.fecha_desde) params.append('fecha_desde', filters.fecha_desde)
+  if (filters.fecha_hasta) params.append('fecha_hasta', filters.fecha_hasta)
+  const qs = params.toString()
   return useQuery({
-    queryKey: ['facturas-resumen'],
-    queryFn: () => api.get('/billing/facturas/resumen/').then(r => r.data),
+    queryKey: ['facturas-resumen', filters],
+    queryFn: () => api.get(`/billing/facturas/resumen/${qs ? '?' + qs : ''}`).then(r => r.data),
   })
 }
 

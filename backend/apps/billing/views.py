@@ -53,21 +53,35 @@ class FacturaResumenView(APIView):
 
     def get(self, request):
         qs = Factura.objects.all()
-        total = qs.aggregate(t=Sum('monto'))['t'] or 0
-        cobrado = qs.filter(estado='cobrado').aggregate(t=Sum('monto'))['t'] or 0
+        # Aplicar los mismos filtros que la lista
+        estado      = request.query_params.get('estado')
+        client      = request.query_params.get('client')
+        fecha_desde = request.query_params.get('fecha_desde')
+        fecha_hasta = request.query_params.get('fecha_hasta')
+        if estado:
+            qs = qs.filter(estado=estado)
+        if client:
+            qs = qs.filter(client_id=client)
+        if fecha_desde:
+            qs = qs.filter(fecha__gte=fecha_desde)
+        if fecha_hasta:
+            qs = qs.filter(fecha__lte=fecha_hasta)
+
+        total     = qs.aggregate(t=Sum('monto'))['t'] or 0
+        cobrado   = qs.filter(estado='cobrado').aggregate(t=Sum('monto'))['t'] or 0
         pendiente = qs.filter(estado__in=['pendiente', 'facturado', 'parcial']).aggregate(t=Sum('monto'))['t'] or 0
-        vencidas = qs.filter(
+        vencidas  = qs.filter(
             estado__in=['pendiente', 'facturado', 'parcial'],
             fecha_vencimiento__lt=date.today()
         ).count()
         return Response({
             'total_facturado': int(total),
-            'total_cobrado': int(cobrado),
+            'total_cobrado':   int(cobrado),
             'total_pendiente': int(pendiente),
-            'count_total': qs.count(),
-            'count_cobrado': qs.filter(estado='cobrado').count(),
+            'count_total':     qs.count(),
+            'count_cobrado':   qs.filter(estado='cobrado').count(),
             'count_pendiente': qs.filter(estado__in=['pendiente', 'facturado', 'parcial']).count(),
-            'count_vencidas': vencidas,
+            'count_vencidas':  vencidas,
         })
 
 

@@ -380,7 +380,12 @@ function TabIngresos() {
     fecha_desde: filterDesde   || undefined,
     fecha_hasta: filterHasta   || undefined,
   })
-  const { data: resumen }     = useFacturaResumen()
+  const { data: resumen }     = useFacturaResumen({
+    estado:      filterEstado  || undefined,
+    client:      filterClient  || undefined,
+    fecha_desde: filterDesde   || undefined,
+    fecha_hasta: filterHasta   || undefined,
+  })
   const { data: clientsData } = useClients()
 
   const createFactura = useCreateFactura()
