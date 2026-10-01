@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import api from '@/services/api'
 
 export function useKPIs(filters = {}) {
@@ -6,6 +6,7 @@ export function useKPIs(filters = {}) {
     queryKey: ['kpis', filters],
     queryFn: () => api.get('/dashboard/kpis/', { params: filters }).then(r => r.data),
     refetchInterval: 1000 * 60 * 5,
+    placeholderData: keepPreviousData,
   })
 }
 

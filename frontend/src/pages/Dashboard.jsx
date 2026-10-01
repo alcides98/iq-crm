@@ -55,10 +55,11 @@ const ALERT_ITEM_COLORS = {
   installments_due: 'text-orange-700 dark:text-orange-400 hover:text-orange-900 dark:hover:text-orange-200',
 }
 
-function FilterBar({ filters, onChange, users }) {
+function FilterBar({ filters, onChange, users, loading }) {
   return (
     <div className="card p-4 flex flex-wrap items-center gap-3">
       <span className="text-xs font-semibold text-gray-400 dark:text-gray-600 uppercase tracking-wide">Filtros</span>
+      {loading && <span className="w-4 h-4 border-2 border-wolf-500 border-t-transparent rounded-full animate-spin ml-1" />}
       <select
         className="input py-1.5 text-sm w-44"
         value={filters.assigned_to}
@@ -101,7 +102,7 @@ export default function Dashboard() {
   const [filters, setFilters] = useState({ assigned_to: '', date_from: '', date_to: '' })
   const activeFilters = Object.fromEntries(Object.entries(filters).filter(([, v]) => v))
 
-  const { data: kpis, isLoading } = useKPIs(activeFilters)
+  const { data: kpis, isLoading, isFetching } = useKPIs(activeFilters)
   const { data: alertData } = useAlerts()
   const { data: usersRaw = [] } = useUsers()
   const dark = useThemeStore(s => s.dark)
@@ -114,7 +115,8 @@ export default function Dashboard() {
     tooltip: dark ? '#1c1c1e' : '#fff',
   }
 
-  if (isLoading) {
+  // Solo bloquear la UI en la carga inicial (sin datos aún)
+  if (isLoading && !kpis) {
     return (
       <div className="flex items-center justify-center h-48">
         <div className="w-7 h-7 border-[3px] border-wolf-600 border-t-transparent rounded-full animate-spin" />
@@ -146,7 +148,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-5">
       {/* Filtros */}
-      <FilterBar filters={filters} onChange={setFilters} users={users} />
+      <FilterBar filters={filters} onChange={setFilters} users={users} loading={isFetching} />
 
       {/* Alertas */}
       {alertData?.alerts?.length > 0 && (

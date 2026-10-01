@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import api from '@/services/api'
 
@@ -43,6 +43,7 @@ export function useEgresos(filters = {}) {
   return useQuery({
     queryKey: ['egresos', filters],
     queryFn: () => api.get(`/billing/egresos/?${params}`).then(r => r.data),
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -136,6 +137,7 @@ export function useFacturas(filters = {}) {
   return useQuery({
     queryKey: ['facturas', filters],
     queryFn: () => api.get(`/billing/facturas/?${params}`).then(r => r.data),
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -149,6 +151,7 @@ export function useFacturaResumen(filters = {}) {
   return useQuery({
     queryKey: ['facturas-resumen', filters],
     queryFn: () => api.get(`/billing/facturas/resumen/${qs ? '?' + qs : ''}`).then(r => r.data),
+    placeholderData: keepPreviousData,
   })
 }
 
