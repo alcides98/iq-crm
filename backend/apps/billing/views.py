@@ -67,17 +67,19 @@ class FacturaResumenView(APIView):
         if fecha_hasta:
             qs = qs.filter(fecha__lte=fecha_hasta)
 
-        total     = qs.aggregate(t=Sum('monto'))['t'] or 0
-        cobrado   = qs.filter(estado='cobrado').aggregate(t=Sum('monto'))['t'] or 0
-        pendiente = qs.filter(estado__in=['pendiente', 'facturado', 'parcial']).aggregate(t=Sum('monto'))['t'] or 0
-        vencidas  = qs.filter(
+        total_facturado = qs.aggregate(t=Sum('monto'))['t'] or 0
+        # Total realmente cobrado = suma de todos los pagos registrados en esas facturas
+        total_cobrado = PagoFactura.objects.filter(factura__in=qs).aggregate(t=Sum('monto'))['t'] or 0
+        # Saldo pendiente real = lo facturado menos lo ya cobrado (evita contar monto completo en parciales)
+        total_pendiente = total_facturado - total_cobrado
+        vencidas = qs.filter(
             estado__in=['pendiente', 'facturado', 'parcial'],
             fecha_vencimiento__lt=date.today()
         ).count()
         return Response({
-            'total_facturado': int(total),
-            'total_cobrado':   int(cobrado),
-            'total_pendiente': int(pendiente),
+            'total_facturado': int(total_facturado),
+            'total_cobrado':   int(total_cobrado),
+            'total_pendiente': int(total_pendiente),
             'count_total':     qs.count(),
             'count_cobrado':   qs.filter(estado='cobrado').count(),
             'count_pendiente': qs.filter(estado__in=['pendiente', 'facturado', 'parcial']).count(),
@@ -154,21 +156,23 @@ class EgresoResumenView(APIView):
 
     def get(self, request):
         qs = Egreso.objects.all()
-        total = qs.aggregate(t=Sum('monto'))['t'] or 0
-        pagado = qs.filter(estado='pagado').aggregate(t=Sum('monto'))['t'] or 0
-        pendiente = qs.filter(estado__in=['pendiente', 'parcial']).aggregate(t=Sum('monto'))['t'] or 0
+        total_egresado = qs.aggregate(t=Sum('monto'))['t'] or 0
+        # Total realmente pagado = suma de todos los pagos registrados
+        total_pagado = PagoEgreso.objects.filter(egreso__in=qs).aggregate(t=Sum('monto'))['t'] or 0
+        # Saldo pendiente real = egresado menos lo ya pagado
+        total_pendiente = total_egresado - total_pagado
         vencidas = qs.filter(
             estado__in=['pendiente', 'parcial'],
             fecha_vencimiento__lt=date.today()
         ).count()
         return Response({
-            'total_egresado': int(total),
-            'total_pagado': int(pagado),
-            'total_pendiente': int(pendiente),
-            'count_total': qs.count(),
-            'count_pagado': qs.filter(estado='pagado').count(),
+            'total_egresado':  int(total_egresado),
+            'total_pagado':    int(total_pagado),
+            'total_pendiente': int(total_pendiente),
+            'count_total':     qs.count(),
+            'count_pagado':    qs.filter(estado='pagado').count(),
             'count_pendiente': qs.filter(estado__in=['pendiente', 'parcial']).count(),
-            'count_vencidas': vencidas,
+            'count_vencidas':  vencidas,
         })
 
 
