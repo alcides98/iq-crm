@@ -13,21 +13,26 @@ DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
-INSTALLED_APPS = [
-    'django.contrib.contenttypes',
-    'django.contrib.auth',
-    'django.contrib.sessions',
-    'django.contrib.messages',
+# ── Multi-tenant (django-tenants) ──────────────────────────────────────────────
+# Apps cuyos modelos viven en el schema PUBLIC (compartido entre todos los tenants)
+SHARED_APPS = [
+    'django_tenants',               # TenantMixin, DomainMixin
+    'apps.tenants',                 # Tenant, Domain
+    'django.contrib.contenttypes',  # Requerido por django-tenants
     'django.contrib.staticfiles',
-    # Third party
+    'django_celery_beat',           # Beat schedule compartido
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
     'django_filters',
-    'django_celery_beat',
-    # Local apps
-    'apps.tenants',
-    'apps.authentication',
+]
+
+# Apps cuyos modelos viven en el schema de CADA TENANT (aislados por empresa)
+TENANT_APPS = [
+    'django.contrib.auth',          # auth_group, auth_permission por tenant
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'apps.authentication',          # User personalizado por tenant
     'apps.clients',
     'apps.pipeline',
     'apps.tasks',
@@ -37,8 +42,17 @@ INSTALLED_APPS = [
     'apps.dashboard',
 ]
 
+INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
+
+TENANT_MODEL = 'tenants.Tenant'
+TENANT_DOMAIN_MODEL = 'tenants.Domain'
+
+DATABASE_ROUTERS = ('django_tenants.routers.TenantSyncRouter',)
+
+# ── Middleware ─────────────────────────────────────────────────────────────────
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
+    'apps.tenants.middleware.TenantHeaderMiddleware',   # ← identifica tenant por X-Tenant header
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -68,9 +82,10 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+# ── Base de datos — ENGINE de django-tenants ───────────────────────────────────
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
+        'ENGINE': 'django_tenants.postgresql_backend',
         'NAME': os.environ.get('DB_NAME', 'wolf_crm'),
         'USER': os.environ.get('DB_USER', 'postgres'),
         'PASSWORD': os.environ.get('DB_PASSWORD', 'postgres'),
@@ -132,9 +147,24 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:3001',
 ]
 
+CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
 
-# ── Celery ─────────────────────────────────────────────────────────────
+# Permitir el header X-Tenant en CORS
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'x-tenant',          # ← header de identificación de tenant
+]
+
+# ── Celery ─────────────────────────────────────────────────────────────────────
 CELERY_BROKER_URL = os.environ.get('REDIS_URL', 'redis://localhost:6380/0')
 CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL', 'redis://localhost:6380/0')
 CELERY_ACCEPT_CONTENT = ['json']
@@ -157,13 +187,13 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
-# ── SIFEN Paraguay ──────────────────────────────────────────────────────
+# ── SIFEN Paraguay ──────────────────────────────────────────────────────────────
 SIFEN_PRODUCTION = os.environ.get('SIFEN_PRODUCTION', 'False') == 'True'
 SIFEN_RUC = os.environ.get('SIFEN_RUC', '')
 SIFEN_CERT_PATH = os.environ.get('SIFEN_CERT_PATH', '')
 SIFEN_CERT_PASSWORD = os.environ.get('SIFEN_CERT_PASSWORD', '')
 
-# ── Email ───────────────────────────────────────────────────────────────
+# ── Email ───────────────────────────────────────────────────────────────────────
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.sendgrid.net')
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
