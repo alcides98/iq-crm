@@ -25,7 +25,7 @@ class Migration(migrations.Migration):
             options={
                 'abstract': False,
             },
-            bases=(django_tenants.models.TenantMixin, models.Model),
+            bases=(models.Model,),
         ),
         migrations.CreateModel(
             name='Domain',
@@ -38,5 +38,6 @@ class Migration(migrations.Migration):
             options={
                 'abstract': False,
             },
+            bases=(models.Model,),
         ),
     ]
