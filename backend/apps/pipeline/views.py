@@ -113,13 +113,16 @@ class DealAdvanceView(APIView):
 
     def _trigger_automations(self, deal, phase):
         try:
+            from django.db import connection
             from apps.notifications.tasks import schedule_followup_reminder
             from apps.tasks.tasks import create_project_from_deal
 
+            schema = connection.schema_name  # schema del tenant activo en este request
+
             if phase == 'propuesta':
-                schedule_followup_reminder.apply_async(args=[deal.id], countdown=48 * 3600)
+                schedule_followup_reminder.apply_async(args=[deal.id, schema], countdown=48 * 3600)
             elif phase == 'ganada':
-                create_project_from_deal.delay(deal.id)
+                create_project_from_deal.delay(deal.id, schema)
         except Exception:
             pass
 
