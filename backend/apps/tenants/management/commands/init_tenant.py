@@ -15,7 +15,7 @@ TABLES_TO_MIGRATE = [
     'auth_group', 'auth_permission', 'auth_group_permissions',
     'authentication_user', 'authentication_user_groups', 'authentication_user_user_permissions',
     'clients_client', 'clients_contact',
-    'pipeline_deal', 'pipeline_phasetransitionlog',
+    'pipeline_pipelinestage', 'pipeline_deal', 'pipeline_phasetransitionlog',
     'tasks_project', 'tasks_project_participants', 'tasks_task', 'tasks_task_participants',
     'billing_payment', 'billing_installment',
     'billing_factura', 'billing_pagofactura', 'billing_egreso', 'billing_pagoegreso',
