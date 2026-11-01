@@ -1,6 +1,5 @@
 from django.db import migrations, models
 import django.db.models.deletion
-import django_tenants.models
 
 
 class Migration(migrations.Migration):
@@ -15,7 +14,7 @@ class Migration(migrations.Migration):
             name='Tenant',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('schema_name', models.CharField(db_index=True, max_length=63, unique=True, validators=[django_tenants.models.schema_name_validator])),
+                ('schema_name', models.CharField(db_index=True, max_length=63, unique=True)),
                 ('name', models.CharField(max_length=200)),
                 ('slug', models.SlugField(unique=True)),
                 ('plan', models.CharField(default='basic', max_length=50)),
