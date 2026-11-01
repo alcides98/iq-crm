@@ -101,14 +101,10 @@ class Command(BaseCommand):
                 return
 
             self.stdout.write('Migrando datos public → wolfcg...')
-            cursor.execute("SET session_replication_role = 'replica'")
 
             for table in TABLES_TO_MIGRATE:
                 try:
-                    cursor.execute(
-                        f'INSERT INTO wolfcg.{table} SELECT * FROM public.{table} ON CONFLICT DO NOTHING'
-                    )
-                    rows = cursor.rowcount
+                    rows = self._copy_table(cursor, table)
                     if rows > 0:
                         self.stdout.write(f'  {table}: {rows} filas')
                 except Exception as e:
@@ -124,5 +120,34 @@ class Command(BaseCommand):
                 except Exception:
                     pass
 
-            cursor.execute("SET session_replication_role = 'origin'")
             self.stdout.write(self.style.SUCCESS('Migración completada'))
+
+    def _copy_table(self, cursor, table):
+        if table == 'tasks_task':
+            # FK auto-referencial (depends_on_id): insertar sin ella primero, luego actualizar
+            cursor.execute("""
+                SELECT column_name FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = 'tasks_task'
+                ORDER BY ordinal_position
+            """)
+            cols = [r[0] for r in cursor.fetchall()]
+            select_parts = ['NULL::integer' if c == 'depends_on_id' else f'"{c}"' for c in cols]
+            insert_cols = ', '.join(f'"{c}"' for c in cols)
+            select_expr = ', '.join(select_parts)
+            cursor.execute(
+                f'INSERT INTO wolfcg.tasks_task ({insert_cols}) '
+                f'SELECT {select_expr} FROM public.tasks_task ON CONFLICT DO NOTHING'
+            )
+            rows = cursor.rowcount
+            cursor.execute("""
+                UPDATE wolfcg.tasks_task wt
+                SET depends_on_id = pt.depends_on_id
+                FROM public.tasks_task pt
+                WHERE wt.id = pt.id AND pt.depends_on_id IS NOT NULL
+            """)
+            return rows
+        else:
+            cursor.execute(
+                f'INSERT INTO wolfcg.{table} SELECT * FROM public.{table} ON CONFLICT DO NOTHING'
+            )
+            return cursor.rowcount
