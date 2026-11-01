@@ -53,11 +53,14 @@ class Command(BaseCommand):
         )
         self.stdout.write(self.style.SUCCESS(f'✓ Tenant "{name}" creado (schema: {slug})'))
 
-        # Registrar dominio localhost para acceso local en dev
+        # Registrar dominio localhost solo si está disponible (dev)
         for local in ['localhost', '127.0.0.1']:
-            Domain.objects.get_or_create(
-                tenant=tenant, domain=local, defaults={'is_primary': False}
-            )
+            try:
+                Domain.objects.get_or_create(
+                    tenant=tenant, domain=local, defaults={'is_primary': False}
+                )
+            except Exception:
+                pass
 
         # Crear usuario owner en el nuevo schema
         admin_email = options['admin_email']
