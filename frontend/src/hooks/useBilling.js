@@ -49,10 +49,14 @@ export function useEgresos(filters = {}) {
   })
 }
 
-export function useEgresoResumen() {
+export function useEgresoResumen(filters = {}) {
+  const params = new URLSearchParams()
+  if (filters.fecha_desde) params.append('fecha_desde', filters.fecha_desde)
+  if (filters.fecha_hasta) params.append('fecha_hasta', filters.fecha_hasta)
+  const qs = params.toString()
   return useQuery({
-    queryKey: ['egresos-resumen'],
-    queryFn: () => api.get('/billing/egresos/resumen/').then(r => r.data),
+    queryKey: ['egresos-resumen', filters],
+    queryFn: () => api.get(`/billing/egresos/resumen/${qs ? '?' + qs : ''}`).then(r => r.data),
   })
 }
 

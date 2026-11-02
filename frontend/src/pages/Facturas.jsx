@@ -651,7 +651,10 @@ function TabEgresos() {
     fecha_desde: filterDesde     || undefined,
     fecha_hasta: filterHasta     || undefined,
   })
-  const { data: resumen } = useEgresoResumen()
+  const { data: resumen } = useEgresoResumen({
+    fecha_desde: filterDesde || undefined,
+    fecha_hasta: filterHasta || undefined,
+  })
 
   const createEgreso = useCreateEgreso()
   const updateEgreso = useUpdateEgreso()

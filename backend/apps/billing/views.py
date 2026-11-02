@@ -165,12 +165,18 @@ class EgresoResumenView(APIView):
 
     def get(self, request):
         qs = Egreso.objects.all()
+        fecha_desde = request.query_params.get('fecha_desde')
+        fecha_hasta = request.query_params.get('fecha_hasta')
+        if fecha_desde:
+            qs = qs.filter(fecha__gte=fecha_desde)
+        if fecha_hasta:
+            qs = qs.filter(fecha__lte=fecha_hasta)
+
         total_egresado = qs.aggregate(t=Sum('monto'))['t'] or 0
-        # Total realmente pagado = suma de todos los pagos registrados
         total_pagado = PagoEgreso.objects.filter(egreso__in=qs).aggregate(t=Sum('monto'))['t'] or 0
-        # Saldo pendiente real = egresado menos lo ya pagado
         total_pendiente = total_egresado - total_pagado
-        vencidas = qs.filter(
+        # Vencidos: histórico completo, ignora filtro de fecha
+        vencidas = Egreso.objects.filter(
             estado__in=['pendiente', 'parcial'],
             fecha_vencimiento__lt=date.today()
         ).count()
