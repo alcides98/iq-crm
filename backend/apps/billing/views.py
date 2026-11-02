@@ -274,14 +274,16 @@ class ConsolidadoView(APIView):
                 .order_by('-total')[:10]
         )
 
-        # Evolución mensual — últimos 12 meses (por fecha de factura/egreso)
+        # Evolución mensual — últimos 12 meses históricos (ignora el filtro de fecha)
+        f_all = Factura.objects.all()
+        e_all = Egreso.objects.all()
         today = date.today()
         evolucion = []
         for i in range(11, -1, -1):
             mes  = (today.month - 1 - i) % 12 + 1
             anio = today.year + ((today.month - 1 - i) // 12)
-            ing = int(f_qs.filter(fecha__year=anio, fecha__month=mes).aggregate(t=Sum('monto'))['t'] or 0)
-            egr = int(e_qs.filter(fecha__year=anio, fecha__month=mes).aggregate(t=Sum('monto'))['t'] or 0)
+            ing = int(f_all.filter(fecha__year=anio, fecha__month=mes).aggregate(t=Sum('monto'))['t'] or 0)
+            egr = int(e_all.filter(fecha__year=anio, fecha__month=mes).aggregate(t=Sum('monto'))['t'] or 0)
             evolucion.append({
                 'mes':      f'{anio}-{mes:02d}',
                 'label':    f'{MESES_ES[mes-1]} {str(anio)[2:]}',

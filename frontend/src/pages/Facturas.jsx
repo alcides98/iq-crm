@@ -439,8 +439,8 @@ function EgresoForm({ initial, onSubmit, onCancel, loading }) {
 function TabIngresos() {
   const [filterEstado,  setFilterEstado]  = useState('')
   const [filterClient,  setFilterClient]  = useState('')
-  const [filterDesde,   setFilterDesde]   = useState(MONTH_FIRST)
-  const [filterHasta,   setFilterHasta]   = useState(MONTH_LAST)
+  const [filterDesde,   setFilterDesde]   = useState('')
+  const [filterHasta,   setFilterHasta]   = useState('')
   const [showForm,   setShowForm]   = useState(false)
   const [editing,    setEditing]    = useState(null)
   const [pagosItem,  setPagosItem]  = useState(null)
@@ -467,8 +467,8 @@ function TabIngresos() {
   const facturas = facturasData?.results || facturasData || []
   const clients  = clientsData?.results  || clientsData  || []
 
-  const hasFilters = filterEstado || filterClient || filterDesde !== MONTH_FIRST || filterHasta !== MONTH_LAST
-  const clearFilters = () => { setFilterEstado(''); setFilterClient(''); setFilterDesde(MONTH_FIRST); setFilterHasta(MONTH_LAST) }
+  const hasFilters = filterEstado || filterClient || filterDesde || filterHasta
+  const clearFilters = () => { setFilterEstado(''); setFilterClient(''); setFilterDesde(''); setFilterHasta('') }
 
   const handleCreate = async (data) => { await createFactura.mutateAsync(data); setShowForm(false) }
   const handleUpdate = async (data) => { await updateFactura.mutateAsync({ id: editing.id, ...data }); setEditing(null) }
