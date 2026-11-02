@@ -760,14 +760,6 @@ function TabConsolidado() {
     color: PIE_COLORS[i % PIE_COLORS.length],
   }))
 
-  const formatM = (n) => {
-    if (!n) return '₲ 0'
-    const num = parseInt(n)
-    if (num >= 1_000_000_000) return `₲ ${(num/1_000_000_000).toFixed(1)}B`
-    if (num >= 1_000_000) return `₲ ${(num/1_000_000).toFixed(1)}M`
-    return `₲ ${num.toLocaleString('es-PY')}`
-  }
-
   const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !payload?.length) return null
     return (
@@ -775,7 +767,7 @@ function TabConsolidado() {
         <p className="font-semibold text-gray-600 dark:text-gray-300 mb-1">{label}</p>
         {payload.map(p => (
           <p key={p.name} style={{ color: p.color }}>
-            {p.name}: {formatM(p.value)}
+            {p.name}: {formatGS(p.value)}
           </p>
         ))}
       </div>
@@ -805,11 +797,11 @@ function TabConsolidado() {
 
       {/* Resumen principal */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <SummaryCard label="Total Ingresos" value={formatM(resumen.total_ingresos)} color="green" />
-        <SummaryCard label="Total Egresos" value={formatM(resumen.total_egresos)} color="red" />
+        <SummaryCard label="Total Ingresos" value={formatGS(resumen.total_ingresos)} color="green" />
+        <SummaryCard label="Total Egresos" value={formatGS(resumen.total_egresos)} color="red" />
         <SummaryCard
           label="Margen Neto"
-          value={formatM(resumen.margen_neto)}
+          value={formatGS(resumen.margen_neto)}
           color={resumen.margen_neto >= 0 ? 'blue' : 'red'}
         />
         <SummaryCard
@@ -826,16 +818,16 @@ function TabConsolidado() {
         <div className="grid grid-cols-3 gap-3">
           <div className="text-center">
             <p className="text-xs text-gray-400 mb-1">IVA Ingresos</p>
-            <p className="text-lg font-bold text-green-600 dark:text-green-400">{formatM(iva.iva_ingresos)}</p>
+            <p className="text-lg font-bold text-green-600 dark:text-green-400">{formatGS(iva.iva_ingresos)}</p>
           </div>
           <div className="text-center">
             <p className="text-xs text-gray-400 mb-1">IVA Egresos</p>
-            <p className="text-lg font-bold text-red-500 dark:text-red-400">{formatM(iva.iva_egresos)}</p>
+            <p className="text-lg font-bold text-red-500 dark:text-red-400">{formatGS(iva.iva_egresos)}</p>
           </div>
           <div className="text-center">
             <p className="text-xs text-gray-400 mb-1">IVA a pagar (SET)</p>
             <p className={`text-lg font-bold ${iva.diferencia >= 0 ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'}`}>
-              {formatM(iva.diferencia)}
+              {formatGS(iva.diferencia)}
             </p>
           </div>
         </div>
@@ -872,7 +864,7 @@ function TabConsolidado() {
                   <Pie data={porCategoria} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${(percent*100).toFixed(0)}%`} labelLine={false}>
                     {porCategoria.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                   </Pie>
-                  <Tooltip formatter={(v) => formatM(v)} />
+                  <Tooltip formatter={(v) => formatGS(v)} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="w-full grid grid-cols-2 gap-1">
@@ -880,7 +872,7 @@ function TabConsolidado() {
                   <div key={i} className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
                     <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: c.color }} />
                     <span className="truncate">{c.name}</span>
-                    <span className="ml-auto font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">{formatM(c.value)}</span>
+                    <span className="ml-auto font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">{formatGS(c.value)}</span>
                   </div>
                 ))}
               </div>
@@ -903,7 +895,7 @@ function TabConsolidado() {
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-center mb-0.5">
                         <span className="text-xs font-medium text-gray-800 dark:text-gray-100 truncate">{c.nombre}</span>
-                        <span className="text-xs font-bold text-green-700 dark:text-green-400 ml-2 whitespace-nowrap">{formatM(c.total)}</span>
+                        <span className="text-xs font-bold text-green-700 dark:text-green-400 ml-2 whitespace-nowrap">{formatGS(c.total)}</span>
                       </div>
                       <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                         <div className="h-full bg-green-500 rounded-full" style={{ width: `${pct}%` }} />
@@ -943,7 +935,7 @@ function TabConsolidado() {
                       <td className="py-2 text-xs text-gray-400 pr-2">{i+1}</td>
                       <td className="py-2 font-medium text-gray-800 dark:text-gray-100">{p.proveedor}</td>
                       <td className="py-2 text-gray-500 dark:text-gray-400">{CATEGORIA_LABEL[p.categoria] || p.categoria}</td>
-                      <td className="py-2 text-right font-bold text-red-600 dark:text-red-400">{formatM(p.total)}</td>
+                      <td className="py-2 text-right font-bold text-red-600 dark:text-red-400">{formatGS(p.total)}</td>
                       <td className="py-2 text-right text-xs text-gray-400">{pct}%</td>
                     </tr>
                   )
