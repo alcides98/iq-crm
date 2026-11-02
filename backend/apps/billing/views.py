@@ -134,13 +134,19 @@ class EgresoListCreateView(generics.ListCreateAPIView):
     serializer_class = EgresoSerializer
 
     def get_queryset(self):
-        qs = Egreso.objects.select_related('created_by').prefetch_related('pagos')
-        estado = self.request.query_params.get('estado')
-        categoria = self.request.query_params.get('categoria')
+        qs = Egreso.objects.select_related('created_by', 'proveedor_client').prefetch_related('pagos')
+        estado      = self.request.query_params.get('estado')
+        categoria   = self.request.query_params.get('categoria')
+        fecha_desde = self.request.query_params.get('fecha_desde')
+        fecha_hasta = self.request.query_params.get('fecha_hasta')
         if estado:
             qs = qs.filter(estado=estado)
         if categoria:
             qs = qs.filter(categoria=categoria)
+        if fecha_desde:
+            qs = qs.filter(fecha__gte=fecha_desde)
+        if fecha_hasta:
+            qs = qs.filter(fecha__lte=fecha_hasta)
         return qs
 
     def perform_create(self, serializer):

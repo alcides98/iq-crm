@@ -7,7 +7,7 @@ from .serializers import ClientSerializer, ClientListSerializer, ContactSerializ
 class ClientListCreateView(generics.ListCreateAPIView):
     queryset = Client.objects.all()
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['status', 'client_type', 'city', 'source']
+    filterset_fields = ['status', 'client_type', 'city', 'source', 'es_proveedor']
     search_fields = ['company_name', 'contact_name', 'email', 'phone', 'ruc']
     ordering_fields = ['company_name', 'created_at', 'status']
     ordering = ['-created_at']

@@ -18,6 +18,7 @@ const EMPTY_FORM = {
   source: '',
   notes: '',
   document_link: '',
+  es_proveedor: false,
 }
 
 export default function ClientForm({ initial = {}, onSubmit, onCancel, loading }) {
@@ -30,7 +31,7 @@ export default function ClientForm({ initial = {}, onSubmit, onCancel, loading }
   }, [initial?.id])
 
   const set = (field) => (e) => {
-    const val = e.target ? e.target.value : e
+    const val = e.target?.type === 'checkbox' ? e.target.checked : (e.target ? e.target.value : e)
     setForm(prev => ({ ...prev, [field]: val }))
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: null }))
   }
@@ -61,7 +62,7 @@ export default function ClientForm({ initial = {}, onSubmit, onCancel, loading }
 
   return (
     <form onSubmit={handleSubmit} className="p-6 space-y-5">
-      {/* Tipo y estado */}
+      {/* Tipo, estado y proveedor */}
       <div className="grid grid-cols-2 gap-4">
         <SelectField label="Tipo" required value={form.client_type} onChange={set('client_type')}>
           <option value="empresa">Empresa</option>
@@ -75,6 +76,16 @@ export default function ClientForm({ initial = {}, onSubmit, onCancel, loading }
           <option value="inactivo">Inactivo</option>
         </SelectField>
       </div>
+      <label className="flex items-center gap-2.5 cursor-pointer select-none w-fit">
+        <input
+          type="checkbox"
+          checked={!!form.es_proveedor}
+          onChange={set('es_proveedor')}
+          className="w-4 h-4 rounded border-gray-300 text-wolf-600 focus:ring-wolf-500 cursor-pointer"
+        />
+        <span className="text-sm text-gray-700 dark:text-gray-300">Es proveedor</span>
+        <span className="text-xs text-gray-400">(aparece en la lista de proveedores al cargar egresos)</span>
+      </label>
 
       {/* Nombre */}
       <InputField

@@ -38,4 +38,4 @@ class ClientListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Client
         fields = ['id', 'client_type', 'status', 'company_name', 'contact_name',
-                  'phone', 'email', 'city', 'source', 'document_link', 'created_at']
+                  'phone', 'email', 'city', 'source', 'document_link', 'es_proveedor', 'created_at']

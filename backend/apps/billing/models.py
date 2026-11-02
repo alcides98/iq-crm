@@ -2,6 +2,14 @@ from django.db import models
 from datetime import date
 
 
+TIPO_IVA_CHOICES = [
+    ('iva_10',  'IVA 10%'),
+    ('iva_5',   'IVA 5%'),
+    ('exenta',  'Exenta'),
+    ('sin_iva', 'Sin IVA'),
+]
+
+
 class Factura(models.Model):
     STATUS_CHOICES = [
         ('facturado', 'Facturado'),
@@ -20,6 +28,7 @@ class Factura(models.Model):
     fecha_vencimiento = models.DateField()
     fecha_cobro = models.DateField(null=True, blank=True)
     estado = models.CharField(max_length=20, choices=STATUS_CHOICES, default='facturado')
+    tipo_iva = models.CharField(max_length=10, choices=TIPO_IVA_CHOICES, default='iva_10')
     notas = models.TextField(blank=True)
     created_by = models.ForeignKey(
         'authentication.User', on_delete=models.SET_NULL,
@@ -110,11 +119,16 @@ class Egreso(models.Model):
 
     descripcion = models.CharField(max_length=300)
     proveedor = models.CharField(max_length=200, blank=True)
+    proveedor_client = models.ForeignKey(
+        'clients.Client', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='egresos_como_proveedor'
+    )
     categoria = models.CharField(max_length=30, choices=CATEGORIA_CHOICES, default='otro')
     monto = models.DecimalField(max_digits=15, decimal_places=0)
     fecha = models.DateField()
     fecha_vencimiento = models.DateField(null=True, blank=True)
     estado = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pendiente')
+    tipo_iva = models.CharField(max_length=10, choices=TIPO_IVA_CHOICES, default='iva_10')
     notas = models.TextField(blank=True)
     created_by = models.ForeignKey(
         'authentication.User', on_delete=models.SET_NULL,

@@ -48,6 +48,8 @@ class Client(models.Model):
     notes = models.TextField(blank=True)
     document_link = models.URLField(blank=True)
 
+    es_proveedor = models.BooleanField(default=False)
+
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='clients_created')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -9,6 +9,13 @@ export function useClients(filters = {}) {
   })
 }
 
+export function useProveedores() {
+  return useQuery({
+    queryKey: ['clients', { es_proveedor: true }],
+    queryFn: () => api.get('/clients/', { params: { es_proveedor: true } }).then(r => r.data),
+  })
+}
+
 export function useClient(id) {
   return useQuery({
     queryKey: ['client', id],

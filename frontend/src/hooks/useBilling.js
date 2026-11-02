@@ -38,8 +38,10 @@ export function useDeletePagoFactura() {
 
 export function useEgresos(filters = {}) {
   const params = new URLSearchParams()
-  if (filters.estado) params.append('estado', filters.estado)
-  if (filters.categoria) params.append('categoria', filters.categoria)
+  if (filters.estado)      params.append('estado',      filters.estado)
+  if (filters.categoria)   params.append('categoria',   filters.categoria)
+  if (filters.fecha_desde) params.append('fecha_desde', filters.fecha_desde)
+  if (filters.fecha_hasta) params.append('fecha_hasta', filters.fecha_hasta)
   return useQuery({
     queryKey: ['egresos', filters],
     queryFn: () => api.get(`/billing/egresos/?${params}`).then(r => r.data),

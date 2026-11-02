@@ -10,8 +10,17 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell,
 } from 'recharts'
-import { useClients } from '@/hooks/useClients'
+import { useClients, useProveedores } from '@/hooks/useClients'
 import { formatGS, formatDate } from '@/utils/format'
+
+// Primer y último día del mes actual (default filtros)
+function currentMonthRange() {
+  const now = new Date()
+  const first = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+  const last  = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+  return { first, last }
+}
+const { first: MONTH_FIRST, last: MONTH_LAST } = currentMonthRange()
 import { PageSpinner } from '@/components/ui/Spinner'
 import Modal from '@/components/ui/Modal'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
@@ -49,6 +58,13 @@ const CATEGORIA_LABEL = {
   proveedor:       'Proveedor',
   servicio:        'Servicio',
   otro:            'Otro',
+}
+
+const TIPO_IVA_LABEL = {
+  iva_10:  'IVA 10%',
+  iva_5:   'IVA 5%',
+  exenta:  'Exenta',
+  sin_iva: 'Sin IVA',
 }
 
 const PIE_COLORS = [
@@ -230,6 +246,7 @@ function FacturaForm({ initial, onSubmit, onCancel, loading, clients }) {
     fecha_vencimiento: initial?.fecha_vencimiento || '',
     fecha_cobro: initial?.fecha_cobro || '',
     estado: initial?.estado || 'facturado',
+    tipo_iva: initial?.tipo_iva || 'iva_10',
     notas: initial?.notas || '',
   })
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
@@ -270,10 +287,19 @@ function FacturaForm({ initial, onSubmit, onCancel, loading, clients }) {
         <label className="label">Detalle del servicio *</label>
         <textarea value={form.detalle_servicio} onChange={e => set('detalle_servicio', e.target.value)} required rows={2} placeholder="Descripción del servicio facturado..." className="input resize-none" />
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         <div>
           <label className="label">Monto (₲) *</label>
           <input type="number" value={form.monto} onChange={e => set('monto', e.target.value)} placeholder="0" required min="0" className="input" />
+        </div>
+        <div>
+          <label className="label">Condición IVA *</label>
+          <select value={form.tipo_iva} onChange={e => set('tipo_iva', e.target.value)} className="input">
+            <option value="iva_10">IVA 10%</option>
+            <option value="iva_5">IVA 5%</option>
+            <option value="exenta">Exenta</option>
+            <option value="sin_iva">Sin IVA</option>
+          </select>
         </div>
         <div>
           <label className="label">Estado *</label>
@@ -312,19 +338,25 @@ function EgresoForm({ initial, onSubmit, onCancel, loading }) {
   const [form, setForm] = useState({
     descripcion:       initial?.descripcion       || '',
     proveedor:         initial?.proveedor         || '',
+    proveedor_client:  initial?.proveedor_client  || '',
     categoria:         initial?.categoria         || 'otro',
     monto:             initial?.monto             || '',
     fecha:             initial?.fecha             || today,
     fecha_vencimiento: initial?.fecha_vencimiento || '',
     estado:            initial?.estado            || 'pendiente',
+    tipo_iva:          initial?.tipo_iva          || 'iva_10',
     notas:             initial?.notas             || '',
   })
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const { data: proveedoresData } = useProveedores()
+  const proveedores = proveedoresData?.results || proveedoresData || []
 
   const handleSubmit = (e) => {
     e.preventDefault()
     const data = { ...form }
     if (!data.fecha_vencimiento) delete data.fecha_vencimiento
+    if (!data.proveedor_client) delete data.proveedor_client
     onSubmit(data)
   }
 
@@ -336,13 +368,31 @@ function EgresoForm({ initial, onSubmit, onCancel, loading }) {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="label">Proveedor</label>
+          <label className="label">Proveedor (empresa registrada)</label>
+          <select value={form.proveedor_client} onChange={e => set('proveedor_client', e.target.value)} className="input">
+            <option value="">— Sin proveedor registrado —</option>
+            {proveedores.map(p => <option key={p.id} value={p.id}>{p.company_name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="label">Proveedor (texto libre)</label>
           <input type="text" value={form.proveedor} onChange={e => set('proveedor', e.target.value)} className="input" placeholder="Nombre del proveedor..." />
         </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="label">Categoría</label>
           <select value={form.categoria} onChange={e => set('categoria', e.target.value)} className="input">
             {Object.entries(CATEGORIA_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="label">Condición IVA</label>
+          <select value={form.tipo_iva} onChange={e => set('tipo_iva', e.target.value)} className="input">
+            <option value="iva_10">IVA 10%</option>
+            <option value="iva_5">IVA 5%</option>
+            <option value="exenta">Exenta</option>
+            <option value="sin_iva">Sin IVA</option>
           </select>
         </div>
       </div>
@@ -389,8 +439,8 @@ function EgresoForm({ initial, onSubmit, onCancel, loading }) {
 function TabIngresos() {
   const [filterEstado,  setFilterEstado]  = useState('')
   const [filterClient,  setFilterClient]  = useState('')
-  const [filterDesde,   setFilterDesde]   = useState('')
-  const [filterHasta,   setFilterHasta]   = useState('')
+  const [filterDesde,   setFilterDesde]   = useState(MONTH_FIRST)
+  const [filterHasta,   setFilterHasta]   = useState(MONTH_LAST)
   const [showForm,   setShowForm]   = useState(false)
   const [editing,    setEditing]    = useState(null)
   const [pagosItem,  setPagosItem]  = useState(null)
@@ -417,8 +467,8 @@ function TabIngresos() {
   const facturas = facturasData?.results || facturasData || []
   const clients  = clientsData?.results  || clientsData  || []
 
-  const hasFilters = filterEstado || filterClient || filterDesde || filterHasta
-  const clearFilters = () => { setFilterEstado(''); setFilterClient(''); setFilterDesde(''); setFilterHasta('') }
+  const hasFilters = filterEstado || filterClient || filterDesde !== MONTH_FIRST || filterHasta !== MONTH_LAST
+  const clearFilters = () => { setFilterEstado(''); setFilterClient(''); setFilterDesde(MONTH_FIRST); setFilterHasta(MONTH_LAST) }
 
   const handleCreate = async (data) => { await createFactura.mutateAsync(data); setShowForm(false) }
   const handleUpdate = async (data) => { await updateFactura.mutateAsync({ id: editing.id, ...data }); setEditing(null) }
@@ -586,14 +636,21 @@ function TabIngresos() {
 // ── Tab: Egresos ──────────────────────────────────────────────────────────────
 
 function TabEgresos() {
-  const [filterEstado, setFilterEstado]     = useState('')
+  const [filterEstado, setFilterEstado]       = useState('')
   const [filterCategoria, setFilterCategoria] = useState('')
+  const [filterDesde,   setFilterDesde]       = useState(MONTH_FIRST)
+  const [filterHasta,   setFilterHasta]       = useState(MONTH_LAST)
   const [showForm, setShowForm]   = useState(false)
   const [editing, setEditing]     = useState(null)
   const [pagosItem, setPagosItem] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
 
-  const { data: egresosData, isLoading } = useEgresos({ estado: filterEstado || undefined, categoria: filterCategoria || undefined })
+  const { data: egresosData, isLoading } = useEgresos({
+    estado:      filterEstado    || undefined,
+    categoria:   filterCategoria || undefined,
+    fecha_desde: filterDesde     || undefined,
+    fecha_hasta: filterHasta     || undefined,
+  })
   const { data: resumen } = useEgresoResumen()
 
   const createEgreso = useCreateEgreso()
@@ -617,8 +674,16 @@ function TabEgresos() {
       </div>
 
       {/* Cabecera + filtros */}
-      <div className="flex flex-wrap items-center gap-3 justify-between">
-        <div className="flex gap-3 flex-wrap">
+      <div className="flex flex-wrap items-end gap-3 justify-between">
+        <div className="flex gap-3 flex-wrap items-end">
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">Desde</label>
+            <input type="date" value={filterDesde} onChange={e => setFilterDesde(e.target.value)} className="input text-sm py-1.5 w-36" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">Hasta</label>
+            <input type="date" value={filterHasta} onChange={e => setFilterHasta(e.target.value)} className="input text-sm py-1.5 w-36" />
+          </div>
           <select value={filterEstado} onChange={e => setFilterEstado(e.target.value)} className="input text-sm py-1.5 pr-8 w-auto">
             <option value="">Todos los estados</option>
             <option value="pendiente">Pendiente</option>
@@ -629,8 +694,8 @@ function TabEgresos() {
             <option value="">Todas las categorías</option>
             {Object.entries(CATEGORIA_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
-          {(filterEstado || filterCategoria) && (
-            <button onClick={() => { setFilterEstado(''); setFilterCategoria('') }} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 px-2">
+          {(filterEstado || filterCategoria || filterDesde !== MONTH_FIRST || filterHasta !== MONTH_LAST) && (
+            <button onClick={() => { setFilterEstado(''); setFilterCategoria(''); setFilterDesde(MONTH_FIRST); setFilterHasta(MONTH_LAST) }} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 px-2 pb-1.5">
               Limpiar
             </button>
           )}
@@ -742,8 +807,8 @@ function TabEgresos() {
 // ── Tab: Consolidado ─────────────────────────────────────────────────────────
 
 function TabConsolidado() {
-  const [filterDesde, setFilterDesde] = useState('')
-  const [filterHasta, setFilterHasta] = useState('')
+  const [filterDesde, setFilterDesde] = useState(MONTH_FIRST)
+  const [filterHasta, setFilterHasta] = useState(MONTH_LAST)
   const { data, isLoading } = useConsolidado({
     fecha_desde: filterDesde || undefined,
     fecha_hasta: filterHasta || undefined,
@@ -788,9 +853,9 @@ function TabConsolidado() {
           <label className="block text-xs text-gray-400 mb-1">Hasta</label>
           <input type="date" value={filterHasta} onChange={e => setFilterHasta(e.target.value)} className="input text-sm py-1.5 w-36" />
         </div>
-        {(filterDesde || filterHasta) && (
-          <button onClick={() => { setFilterDesde(''); setFilterHasta('') }} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 pb-1.5">
-            Limpiar filtros
+        {(filterDesde !== MONTH_FIRST || filterHasta !== MONTH_LAST) && (
+          <button onClick={() => { setFilterDesde(MONTH_FIRST); setFilterHasta(MONTH_LAST) }} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 pb-1.5">
+            Mes actual
           </button>
         )}
       </div>

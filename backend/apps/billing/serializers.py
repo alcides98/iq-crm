@@ -24,7 +24,7 @@ class FacturaSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'client', 'client_name', 'numero_factura', 'fecha',
             'detalle_servicio', 'monto', 'monto_pagado', 'saldo_pendiente',
-            'fecha_vencimiento', 'fecha_cobro', 'estado', 'notas',
+            'fecha_vencimiento', 'fecha_cobro', 'estado', 'tipo_iva', 'notas',
             'dias_atraso', 'dias_para_vencer', 'pagos',
             'created_by', 'created_at', 'updated_at',
         ]
@@ -48,16 +48,21 @@ class EgresoSerializer(serializers.ModelSerializer):
     saldo_pendiente = serializers.ReadOnlyField()
     dias_atraso = serializers.ReadOnlyField()
     pagos = PagoEgresoSerializer(many=True, read_only=True)
+    proveedor_client_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Egreso
         fields = [
-            'id', 'descripcion', 'proveedor', 'categoria', 'monto',
-            'monto_pagado', 'saldo_pendiente', 'fecha', 'fecha_vencimiento',
-            'estado', 'notas', 'dias_atraso', 'pagos',
+            'id', 'descripcion', 'proveedor', 'proveedor_client', 'proveedor_client_name',
+            'categoria', 'monto', 'monto_pagado', 'saldo_pendiente',
+            'fecha', 'fecha_vencimiento', 'estado', 'tipo_iva', 'notas',
+            'dias_atraso', 'pagos',
             'created_by', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'created_by', 'created_at', 'updated_at']
+
+    def get_proveedor_client_name(self, obj):
+        return obj.proveedor_client.company_name if obj.proveedor_client else None
 
 
 # ── Payment / Installment ─────────────────────────────────────────────────────
