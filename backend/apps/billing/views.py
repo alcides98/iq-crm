@@ -72,9 +72,10 @@ class FacturaResumenView(APIView):
         total_facturado = qs.aggregate(t=Sum('monto'))['t'] or 0
         # Total realmente cobrado = suma de todos los pagos registrados en esas facturas
         total_cobrado = PagoFactura.objects.filter(factura__in=qs).aggregate(t=Sum('monto'))['t'] or 0
-        # Saldo pendiente real = lo facturado menos lo ya cobrado (evita contar monto completo en parciales)
+        # Saldo pendiente real = lo facturado menos lo ya cobrado
         total_pendiente = total_facturado - total_cobrado
-        vencidas = qs.filter(
+        # Vencidas: histórico completo, ignora filtro de fecha
+        vencidas = Factura.objects.filter(
             estado__in=['pendiente', 'facturado', 'parcial'],
             fecha_vencimiento__lt=date.today()
         ).count()
