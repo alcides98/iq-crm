@@ -223,46 +223,59 @@ class ConsolidadoView(APIView):
         fecha_desde = request.query_params.get('fecha_desde')
         fecha_hasta = request.query_params.get('fecha_hasta')
 
-        pf_qs = PagoFactura.objects.select_related('factura__client')
-        pe_qs = PagoEgreso.objects.select_related('egreso')
+        # Bruto: todas las facturas y egresos sin importar estado de pago
+        f_qs = Factura.objects.select_related('client')
+        e_qs = Egreso.objects.all()
         if fecha_desde:
-            pf_qs = pf_qs.filter(fecha__gte=fecha_desde)
-            pe_qs = pe_qs.filter(fecha__gte=fecha_desde)
+            f_qs = f_qs.filter(fecha__gte=fecha_desde)
+            e_qs = e_qs.filter(fecha__gte=fecha_desde)
         if fecha_hasta:
-            pf_qs = pf_qs.filter(fecha__lte=fecha_hasta)
-            pe_qs = pe_qs.filter(fecha__lte=fecha_hasta)
+            f_qs = f_qs.filter(fecha__lte=fecha_hasta)
+            e_qs = e_qs.filter(fecha__lte=fecha_hasta)
 
-        total_ingresos = int(pf_qs.aggregate(t=Sum('monto'))['t'] or 0)
-        total_egresos  = int(pe_qs.aggregate(t=Sum('monto'))['t'] or 0)
-        margen_neto    = total_ingresos - total_egresos
-        pct_egreso     = round(total_egresos / total_ingresos * 100, 1) if total_ingresos > 0 else 0
+        total_bruto_ingresos = int(f_qs.aggregate(t=Sum('monto'))['t'] or 0)
+        total_bruto_egresos  = int(e_qs.aggregate(t=Sum('monto'))['t'] or 0)
+
+        # Cobrado y pagado reales
+        total_cobrado = int(PagoFactura.objects.filter(factura__in=f_qs).aggregate(t=Sum('monto'))['t'] or 0)
+        total_pagado  = int(PagoEgreso.objects.filter(egreso__in=e_qs).aggregate(t=Sum('monto'))['t'] or 0)
+
+        pct_cobrado = round(total_cobrado / total_bruto_ingresos * 100, 1) if total_bruto_ingresos > 0 else 0
+        pct_pagado  = round(total_pagado  / total_bruto_egresos  * 100, 1) if total_bruto_egresos  > 0 else 0
+
+        # Neto sin IVA 10% (monto * 100/110)
+        neto_ingresos = round(total_bruto_ingresos * 100 / 110)
+        neto_egresos  = round(total_bruto_egresos  * 100 / 110)
+
+        margen_neto = total_bruto_ingresos - total_bruto_egresos
+        pct_egreso  = round(total_bruto_egresos / total_bruto_ingresos * 100, 1) if total_bruto_ingresos > 0 else 0
 
         # IVA 10% incluido: IVA = monto / 11
-        iva_ingresos = round(total_ingresos / 11)
-        iva_egresos  = round(total_egresos  / 11)
+        iva_ingresos = round(total_bruto_ingresos / 11)
+        iva_egresos  = round(total_bruto_egresos  / 11)
 
-        # Top clientes
+        # Top clientes por ingresos (bruto)
         top_clientes = list(
-            pf_qs.values('factura__client__id', 'factura__client__company_name')
-                 .annotate(total=Sum('monto'))
-                 .order_by('-total')[:10]
+            f_qs.values('client__id', 'client__company_name')
+                .annotate(total=Sum('monto'))
+                .order_by('-total')[:10]
         )
 
-        # Top egresos por proveedor
+        # Top egresos por proveedor (bruto)
         top_proveedores = list(
-            pe_qs.values('egreso__proveedor', 'egreso__categoria')
-                 .annotate(total=Sum('monto'))
-                 .order_by('-total')[:10]
+            e_qs.values('proveedor', 'categoria')
+                .annotate(total=Sum('monto'))
+                .order_by('-total')[:10]
         )
 
-        # Evolución mensual — últimos 12 meses
+        # Evolución mensual — últimos 12 meses (por fecha de factura/egreso)
         today = date.today()
         evolucion = []
         for i in range(11, -1, -1):
             mes  = (today.month - 1 - i) % 12 + 1
             anio = today.year + ((today.month - 1 - i) // 12)
-            ing = int(pf_qs.filter(fecha__year=anio, fecha__month=mes).aggregate(t=Sum('monto'))['t'] or 0)
-            egr = int(pe_qs.filter(fecha__year=anio, fecha__month=mes).aggregate(t=Sum('monto'))['t'] or 0)
+            ing = int(f_qs.filter(fecha__year=anio, fecha__month=mes).aggregate(t=Sum('monto'))['t'] or 0)
+            egr = int(e_qs.filter(fecha__year=anio, fecha__month=mes).aggregate(t=Sum('monto'))['t'] or 0)
             evolucion.append({
                 'mes':      f'{anio}-{mes:02d}',
                 'label':    f'{MESES_ES[mes-1]} {str(anio)[2:]}',
@@ -271,19 +284,25 @@ class ConsolidadoView(APIView):
                 'margen':   ing - egr,
             })
 
-        # Egresos por categoría
+        # Egresos por categoría (bruto)
         egresos_por_categoria = list(
-            pe_qs.values('egreso__categoria')
-                 .annotate(total=Sum('monto'))
-                 .order_by('-total')
+            e_qs.values('categoria')
+                .annotate(total=Sum('monto'))
+                .order_by('-total')
         )
 
         return Response({
             'resumen': {
-                'total_ingresos': total_ingresos,
-                'total_egresos':  total_egresos,
-                'margen_neto':    margen_neto,
-                'pct_egreso':     pct_egreso,
+                'total_bruto_ingresos': total_bruto_ingresos,
+                'total_bruto_egresos':  total_bruto_egresos,
+                'neto_ingresos':        neto_ingresos,
+                'neto_egresos':         neto_egresos,
+                'total_cobrado':        total_cobrado,
+                'total_pagado':         total_pagado,
+                'pct_cobrado':          pct_cobrado,
+                'pct_pagado':           pct_pagado,
+                'margen_neto':          margen_neto,
+                'pct_egreso':           pct_egreso,
             },
             'iva': {
                 'iva_ingresos': iva_ingresos,
@@ -291,16 +310,16 @@ class ConsolidadoView(APIView):
                 'diferencia':   iva_ingresos - iva_egresos,
             },
             'top_clientes': [
-                {'id': r['factura__client__id'], 'nombre': r['factura__client__company_name'], 'total': int(r['total'])}
+                {'id': r['client__id'], 'nombre': r['client__company_name'], 'total': int(r['total'])}
                 for r in top_clientes
             ],
             'top_proveedores': [
-                {'proveedor': r['egreso__proveedor'] or '—', 'categoria': r['egreso__categoria'], 'total': int(r['total'])}
+                {'proveedor': r['proveedor'] or '—', 'categoria': r['categoria'], 'total': int(r['total'])}
                 for r in top_proveedores
             ],
             'evolucion_mensual': evolucion,
             'egresos_por_categoria': [
-                {'categoria': r['egreso__categoria'], 'total': int(r['total'])}
+                {'categoria': r['categoria'], 'total': int(r['total'])}
                 for r in egresos_por_categoria
             ],
         })

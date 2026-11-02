@@ -796,13 +796,37 @@ function TabConsolidado() {
       </div>
 
       {/* Resumen principal */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <SummaryCard label="Total Ingresos" value={formatGS(resumen.total_ingresos)} color="green" />
-        <SummaryCard label="Total Egresos" value={formatGS(resumen.total_egresos)} color="red" />
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {/* Fila ingresos */}
+        <SummaryCard
+          label="Total Ingresos Bruto"
+          value={formatGS(resumen.total_bruto_ingresos)}
+          sub={`Neto sin IVA: ${formatGS(resumen.neto_ingresos)}`}
+          color="green"
+        />
+        <SummaryCard
+          label="Total Cobrado"
+          value={formatGS(resumen.total_cobrado)}
+          sub={`${resumen.pct_cobrado || 0}% del total facturado`}
+          color="blue"
+        />
         <SummaryCard
           label="Margen Neto"
           value={formatGS(resumen.margen_neto)}
           color={resumen.margen_neto >= 0 ? 'blue' : 'red'}
+        />
+        {/* Fila egresos */}
+        <SummaryCard
+          label="Total Egresos Bruto"
+          value={formatGS(resumen.total_bruto_egresos)}
+          sub={`Neto sin IVA: ${formatGS(resumen.neto_egresos)}`}
+          color="red"
+        />
+        <SummaryCard
+          label="Total Pagado"
+          value={formatGS(resumen.total_pagado)}
+          sub={`${resumen.pct_pagado || 0}% del total egresado`}
+          color="purple"
         />
         <SummaryCard
           label="% Egreso / Ingreso"
