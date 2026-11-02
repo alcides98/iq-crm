@@ -7,6 +7,8 @@ from django.utils import timezone
 from datetime import date
 
 from .models import Payment, Installment, Factura, PagoFactura, Egreso, PagoEgreso
+
+MESES_ES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
 from .serializers import (
     PaymentSerializer, InstallmentSerializer,
     FacturaSerializer, PagoFacturaSerializer,
@@ -210,6 +212,98 @@ def _recalculate_egreso(egreso):
     else:
         egreso.estado = 'pendiente'
     egreso.save(update_fields=['estado'])
+
+
+# ─── Consolidado ─────────────────────────────────────────────────────────────
+
+class ConsolidadoView(APIView):
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+
+    def get(self, request):
+        fecha_desde = request.query_params.get('fecha_desde')
+        fecha_hasta = request.query_params.get('fecha_hasta')
+
+        pf_qs = PagoFactura.objects.select_related('factura__client')
+        pe_qs = PagoEgreso.objects.select_related('egreso')
+        if fecha_desde:
+            pf_qs = pf_qs.filter(fecha__gte=fecha_desde)
+            pe_qs = pe_qs.filter(fecha__gte=fecha_desde)
+        if fecha_hasta:
+            pf_qs = pf_qs.filter(fecha__lte=fecha_hasta)
+            pe_qs = pe_qs.filter(fecha__lte=fecha_hasta)
+
+        total_ingresos = int(pf_qs.aggregate(t=Sum('monto'))['t'] or 0)
+        total_egresos  = int(pe_qs.aggregate(t=Sum('monto'))['t'] or 0)
+        margen_neto    = total_ingresos - total_egresos
+        pct_egreso     = round(total_egresos / total_ingresos * 100, 1) if total_ingresos > 0 else 0
+
+        # IVA 10% incluido: IVA = monto / 11
+        iva_ingresos = round(total_ingresos / 11)
+        iva_egresos  = round(total_egresos  / 11)
+
+        # Top clientes
+        top_clientes = list(
+            pf_qs.values('factura__client__id', 'factura__client__company_name')
+                 .annotate(total=Sum('monto'))
+                 .order_by('-total')[:10]
+        )
+
+        # Top egresos por proveedor
+        top_proveedores = list(
+            pe_qs.values('egreso__proveedor', 'egreso__categoria')
+                 .annotate(total=Sum('monto'))
+                 .order_by('-total')[:10]
+        )
+
+        # Evolución mensual — últimos 12 meses
+        today = date.today()
+        evolucion = []
+        for i in range(11, -1, -1):
+            mes  = (today.month - 1 - i) % 12 + 1
+            anio = today.year + ((today.month - 1 - i) // 12)
+            ing = int(pf_qs.filter(fecha__year=anio, fecha__month=mes).aggregate(t=Sum('monto'))['t'] or 0)
+            egr = int(pe_qs.filter(fecha__year=anio, fecha__month=mes).aggregate(t=Sum('monto'))['t'] or 0)
+            evolucion.append({
+                'mes':      f'{anio}-{mes:02d}',
+                'label':    f'{MESES_ES[mes-1]} {str(anio)[2:]}',
+                'ingresos': ing,
+                'egresos':  egr,
+                'margen':   ing - egr,
+            })
+
+        # Egresos por categoría
+        egresos_por_categoria = list(
+            pe_qs.values('egreso__categoria')
+                 .annotate(total=Sum('monto'))
+                 .order_by('-total')
+        )
+
+        return Response({
+            'resumen': {
+                'total_ingresos': total_ingresos,
+                'total_egresos':  total_egresos,
+                'margen_neto':    margen_neto,
+                'pct_egreso':     pct_egreso,
+            },
+            'iva': {
+                'iva_ingresos': iva_ingresos,
+                'iva_egresos':  iva_egresos,
+                'diferencia':   iva_ingresos - iva_egresos,
+            },
+            'top_clientes': [
+                {'id': r['factura__client__id'], 'nombre': r['factura__client__company_name'], 'total': int(r['total'])}
+                for r in top_clientes
+            ],
+            'top_proveedores': [
+                {'proveedor': r['egreso__proveedor'] or '—', 'categoria': r['egreso__categoria'], 'total': int(r['total'])}
+                for r in top_proveedores
+            ],
+            'evolucion_mensual': evolucion,
+            'egresos_por_categoria': [
+                {'categoria': r['egreso__categoria'], 'total': int(r['total'])}
+                for r in egresos_por_categoria
+            ],
+        })
 
 
 # ─── Payment / Installment ────────────────────────────────────────────────────

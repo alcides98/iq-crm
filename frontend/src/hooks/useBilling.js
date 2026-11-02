@@ -197,6 +197,18 @@ export function useDeleteFactura() {
   })
 }
 
+export function useConsolidado(filters = {}) {
+  const params = new URLSearchParams()
+  if (filters.fecha_desde) params.append('fecha_desde', filters.fecha_desde)
+  if (filters.fecha_hasta) params.append('fecha_hasta', filters.fecha_hasta)
+  const qs = params.toString()
+  return useQuery({
+    queryKey: ['consolidado', filters],
+    queryFn: () => api.get(`/billing/consolidado/${qs ? '?' + qs : ''}`).then(r => r.data),
+    placeholderData: keepPreviousData,
+  })
+}
+
 export function usePayments() {
   return useQuery({
     queryKey: ['payments'],

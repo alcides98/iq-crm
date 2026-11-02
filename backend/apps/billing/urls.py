@@ -6,6 +6,7 @@ from .views import (
     PagoFacturaListCreateView, PagoFacturaDetailView,
     EgresoListCreateView, EgresoDetailView, EgresoResumenView,
     PagoEgresoListCreateView, PagoEgresoDetailView,
+    ConsolidadoView,
 )
 
 urlpatterns = [
@@ -22,6 +23,9 @@ urlpatterns = [
     path('egresos/<int:pk>/',      EgresoDetailView.as_view(),       name='egreso-detail'),
     path('egresos/<int:pk>/pagos/', PagoEgresoListCreateView.as_view(), name='pagoegreso-list'),
     path('pagos-egreso/<int:pk>/', PagoEgresoDetailView.as_view(),  name='pagoegreso-detail'),
+
+    # Consolidado
+    path('consolidado/', ConsolidadoView.as_view(), name='consolidado'),
 
     # Payments (cobros por deal)
     path('payments/',              PaymentListCreateView.as_view(),  name='payment-list'),

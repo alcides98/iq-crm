@@ -94,13 +94,18 @@ class Egreso(models.Model):
         ('pagado',    'Pagado'),
     ]
     CATEGORIA_CHOICES = [
-        ('proveedor', 'Proveedor'),
-        ('servicio',  'Servicio'),
-        ('salario',   'Salario'),
-        ('impuesto',  'Impuesto'),
-        ('alquiler',  'Alquiler'),
-        ('marketing', 'Marketing'),
-        ('otro',      'Otro'),
+        ('operativo',       'Operativo'),
+        ('contable',        'Contable'),
+        ('comisiones',      'Comisiones'),
+        ('alquiler',        'Alquiler'),
+        ('salario',         'Salario'),
+        ('tarjeta_credito', 'Tarjeta de crédito'),
+        ('insumos',         'Insumos'),
+        ('marketing',       'Marketing'),
+        ('impuesto',        'Impuesto'),
+        ('proveedor',       'Proveedor'),
+        ('servicio',        'Servicio'),
+        ('otro',            'Otro'),
     ]
 
     descripcion = models.CharField(max_length=300)

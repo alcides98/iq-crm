@@ -4,7 +4,12 @@ import {
   useCreatePagoFactura, useDeletePagoFactura,
   useEgresos, useEgresoResumen, useCreateEgreso, useUpdateEgreso, useDeleteEgreso,
   useCreatePagoEgreso, useDeletePagoEgreso,
+  useConsolidado,
 } from '@/hooks/useBilling'
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell,
+} from 'recharts'
 import { useClients } from '@/hooks/useClients'
 import { formatGS, formatDate } from '@/utils/format'
 import { PageSpinner } from '@/components/ui/Spinner'
@@ -32,21 +37,38 @@ const METODO_LABEL = {
 }
 
 const CATEGORIA_LABEL = {
-  proveedor: 'Proveedor', servicio: 'Servicio', salario: 'Salario',
-  impuesto: 'Impuesto', alquiler: 'Alquiler', marketing: 'Marketing', otro: 'Otro',
+  operativo:       'Operativo',
+  contable:        'Contable',
+  comisiones:      'Comisiones',
+  alquiler:        'Alquiler',
+  salario:         'Salario',
+  tarjeta_credito: 'Tarjeta de crédito',
+  insumos:         'Insumos',
+  marketing:       'Marketing',
+  impuesto:        'Impuesto',
+  proveedor:       'Proveedor',
+  servicio:        'Servicio',
+  otro:            'Otro',
 }
+
+const PIE_COLORS = [
+  '#6366f1','#f59e0b','#10b981','#ef4444','#3b82f6','#8b5cf6',
+  '#ec4899','#14b8a6','#f97316','#a3e635','#64748b','#e11d48',
+]
 
 function SummaryCard({ label, value, sub, color }) {
   const borders = {
-    blue: 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/10',
-    green: 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/10',
-    amber: 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/10',
-    red: 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/10',
+    blue:   'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/10',
+    green:  'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/10',
+    amber:  'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/10',
+    red:    'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/10',
     purple: 'border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/10',
   }
   const texts = {
-    blue: 'text-blue-700 dark:text-blue-300', green: 'text-green-700 dark:text-green-300',
-    amber: 'text-amber-700 dark:text-amber-300', red: 'text-red-700 dark:text-red-300',
+    blue:   'text-blue-700 dark:text-blue-300',
+    green:  'text-green-700 dark:text-green-300',
+    amber:  'text-amber-700 dark:text-amber-300',
+    red:    'text-red-700 dark:text-red-300',
     purple: 'text-purple-700 dark:text-purple-300',
   }
   return (
@@ -717,6 +739,224 @@ function TabEgresos() {
   )
 }
 
+// ── Tab: Consolidado ─────────────────────────────────────────────────────────
+
+function TabConsolidado() {
+  const [filterDesde, setFilterDesde] = useState('')
+  const [filterHasta, setFilterHasta] = useState('')
+  const { data, isLoading } = useConsolidado({
+    fecha_desde: filterDesde || undefined,
+    fecha_hasta: filterHasta || undefined,
+  })
+
+  const resumen = data?.resumen || {}
+  const iva = data?.iva || {}
+  const evolucion = data?.evolucion_mensual || []
+  const topClientes = data?.top_clientes || []
+  const topProveedores = data?.top_proveedores || []
+  const porCategoria = (data?.egresos_por_categoria || []).map((r, i) => ({
+    name: CATEGORIA_LABEL[r.categoria] || r.categoria,
+    value: r.total,
+    color: PIE_COLORS[i % PIE_COLORS.length],
+  }))
+
+  const formatM = (n) => {
+    if (!n) return '₲ 0'
+    const num = parseInt(n)
+    if (num >= 1_000_000_000) return `₲ ${(num/1_000_000_000).toFixed(1)}B`
+    if (num >= 1_000_000) return `₲ ${(num/1_000_000).toFixed(1)}M`
+    return `₲ ${num.toLocaleString('es-PY')}`
+  }
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (!active || !payload?.length) return null
+    return (
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-3 shadow-lg text-xs">
+        <p className="font-semibold text-gray-600 dark:text-gray-300 mb-1">{label}</p>
+        {payload.map(p => (
+          <p key={p.name} style={{ color: p.color }}>
+            {p.name}: {formatM(p.value)}
+          </p>
+        ))}
+      </div>
+    )
+  }
+
+  if (isLoading) return <PageSpinner />
+
+  return (
+    <div className="space-y-6">
+      {/* Filtros de fecha */}
+      <div className="flex flex-wrap gap-3 items-end">
+        <div>
+          <label className="block text-xs text-gray-400 mb-1">Desde</label>
+          <input type="date" value={filterDesde} onChange={e => setFilterDesde(e.target.value)} className="input text-sm py-1.5 w-36" />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-400 mb-1">Hasta</label>
+          <input type="date" value={filterHasta} onChange={e => setFilterHasta(e.target.value)} className="input text-sm py-1.5 w-36" />
+        </div>
+        {(filterDesde || filterHasta) && (
+          <button onClick={() => { setFilterDesde(''); setFilterHasta('') }} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 pb-1.5">
+            Limpiar filtros
+          </button>
+        )}
+      </div>
+
+      {/* Resumen principal */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <SummaryCard label="Total Ingresos" value={formatM(resumen.total_ingresos)} color="green" />
+        <SummaryCard label="Total Egresos" value={formatM(resumen.total_egresos)} color="red" />
+        <SummaryCard
+          label="Margen Neto"
+          value={formatM(resumen.margen_neto)}
+          color={resumen.margen_neto >= 0 ? 'blue' : 'red'}
+        />
+        <SummaryCard
+          label="% Egreso / Ingreso"
+          value={`${resumen.pct_egreso || 0}%`}
+          sub={resumen.pct_egreso > 80 ? '⚠ Alto porcentaje de egreso' : undefined}
+          color={resumen.pct_egreso > 80 ? 'red' : 'amber'}
+        />
+      </div>
+
+      {/* IVA */}
+      <div className="rounded-xl border border-gray-200 dark:border-gray-800 p-4 space-y-3">
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">IVA estimado (10% incluido)</h3>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="text-center">
+            <p className="text-xs text-gray-400 mb-1">IVA Ingresos</p>
+            <p className="text-lg font-bold text-green-600 dark:text-green-400">{formatM(iva.iva_ingresos)}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-xs text-gray-400 mb-1">IVA Egresos</p>
+            <p className="text-lg font-bold text-red-500 dark:text-red-400">{formatM(iva.iva_egresos)}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-xs text-gray-400 mb-1">IVA a pagar (SET)</p>
+            <p className={`text-lg font-bold ${iva.diferencia >= 0 ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'}`}>
+              {formatM(iva.diferencia)}
+            </p>
+          </div>
+        </div>
+        <p className="text-xs text-gray-400">* Cálculo estimativo basado en IVA 10% incluido en todos los montos cobrados/pagados.</p>
+      </div>
+
+      {/* Evolución mensual */}
+      <div className="rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Evolución mensual — últimos 12 meses</h3>
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={evolucion} barCategoryGap="30%">
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#9ca3af' }} />
+            <YAxis tickFormatter={v => v >= 1_000_000 ? `${(v/1_000_000).toFixed(0)}M` : v.toLocaleString()} tick={{ fontSize: 10, fill: '#9ca3af' }} width={60} />
+            <Tooltip content={<CustomTooltip />} />
+            <Legend wrapperStyle={{ fontSize: 12 }} />
+            <Bar dataKey="ingresos" name="Ingresos" fill="#22c55e" radius={[4,4,0,0]} />
+            <Bar dataKey="egresos"  name="Egresos"  fill="#ef4444" radius={[4,4,0,0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Gráficos inferiores + tablas */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Pie: egresos por categoría */}
+        <div className="rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Egresos por categoría</h3>
+          {porCategoria.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-8">Sin egresos registrados</p>
+          ) : (
+            <div className="flex flex-col items-center gap-4">
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie data={porCategoria} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${(percent*100).toFixed(0)}%`} labelLine={false}>
+                    {porCategoria.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                  </Pie>
+                  <Tooltip formatter={(v) => formatM(v)} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="w-full grid grid-cols-2 gap-1">
+                {porCategoria.map((c, i) => (
+                  <div key={i} className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: c.color }} />
+                    <span className="truncate">{c.name}</span>
+                    <span className="ml-auto font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">{formatM(c.value)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Top clientes */}
+        <div className="rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Mejores clientes por ingresos</h3>
+          {topClientes.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-8">Sin datos</p>
+          ) : (
+            <div className="space-y-2">
+              {topClientes.map((c, i) => {
+                const pct = resumen.total_ingresos > 0 ? (c.total / resumen.total_ingresos * 100).toFixed(0) : 0
+                return (
+                  <div key={c.id} className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-gray-300 dark:text-gray-600 w-4">{i+1}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-center mb-0.5">
+                        <span className="text-xs font-medium text-gray-800 dark:text-gray-100 truncate">{c.nombre}</span>
+                        <span className="text-xs font-bold text-green-700 dark:text-green-400 ml-2 whitespace-nowrap">{formatM(c.total)}</span>
+                      </div>
+                      <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-full bg-green-500 rounded-full" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                    <span className="text-xs text-gray-400 w-8 text-right">{pct}%</span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Top egresos por proveedor */}
+      <div className="rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Egresos por proveedor / concepto</h3>
+        {topProveedores.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-4">Sin datos</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left">
+                  <th className="pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wide">#</th>
+                  <th className="pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wide">Proveedor</th>
+                  <th className="pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wide">Categoría</th>
+                  <th className="pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wide text-right">Total</th>
+                  <th className="pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wide text-right">%</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                {topProveedores.map((p, i) => {
+                  const pct = resumen.total_egresos > 0 ? (p.total / resumen.total_egresos * 100).toFixed(1) : 0
+                  return (
+                    <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-900/30">
+                      <td className="py-2 text-xs text-gray-400 pr-2">{i+1}</td>
+                      <td className="py-2 font-medium text-gray-800 dark:text-gray-100">{p.proveedor}</td>
+                      <td className="py-2 text-gray-500 dark:text-gray-400">{CATEGORIA_LABEL[p.categoria] || p.categoria}</td>
+                      <td className="py-2 text-right font-bold text-red-600 dark:text-red-400">{formatM(p.total)}</td>
+                      <td className="py-2 text-right text-xs text-gray-400">{pct}%</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Página principal ──────────────────────────────────────────────────────────
 
 export default function Facturas() {
@@ -733,8 +973,9 @@ export default function Facturas() {
       {/* Tabs */}
       <div className="flex gap-1 border-b border-gray-100 dark:border-gray-900">
         {[
-          { key: 'ingresos', label: 'Ingresos (Facturas)' },
-          { key: 'egresos',  label: 'Egresos' },
+          { key: 'ingresos',    label: 'Ingresos (Facturas)' },
+          { key: 'egresos',     label: 'Egresos' },
+          { key: 'consolidado', label: 'Consolidado' },
         ].map(t => (
           <button
             key={t.key}
@@ -751,8 +992,9 @@ export default function Facturas() {
         ))}
       </div>
 
-      {tab === 'ingresos' && <TabIngresos />}
-      {tab === 'egresos'  && <TabEgresos />}
+      {tab === 'ingresos'    && <TabIngresos />}
+      {tab === 'egresos'     && <TabEgresos />}
+      {tab === 'consolidado' && <TabConsolidado />}
     </div>
   )
 }
